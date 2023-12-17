@@ -120,6 +120,11 @@ class Blackjack():
             lambda: self.insurance(0.4),
             lambda: self.insurance(0.5),
         ]
+    
+    def is_terminal(self):
+        return self.is_terminal
+    
+    
 
 
 
