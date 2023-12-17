@@ -1,11 +1,14 @@
 from abc import ABC
 
+class Hashable(ABC):
+    def __hash__(self) -> int:
+        raise NotImplementedError
 
-class State(ABC):
-    ...
+class State(Hashable):
+    pass
 
-class Action(ABC):
-    ...
+class Action(Hashable):
+    pass
 
 class World(ABC):
     def get_current_state(self) -> State:
