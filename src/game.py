@@ -26,11 +26,11 @@ class Blackjack():
             Actions.STAND: self.stand,
             Actions.DOUBLE_DOWN: self.double_down,
             Actions.SPLIT: self.split,
-            Actions.INSURANCE_1: self.insurance,
-            Actions.INSURANCE_2: self.insurance,
-            Actions.INSURANCE_3: self.insurance,
-            Actions.INSURANCE_4: self.insurance,
-            Actions.INSURANCE_5: self.insurance,
+            Actions.INSURANCE_1: lambda: self.insurance(0.1),
+            Actions.INSURANCE_2: lambda: self.insurance(0.2),
+            Actions.INSURANCE_3: lambda: self.insurance(0.3),
+            Actions.INSURANCE_4: lambda: self.insurance(0.4),
+            Actions.INSURANCE_5: lambda: self.insurance(0.5),
         }
 
     def state(self):
