@@ -51,20 +51,34 @@ class Blackjack():
         self.dealer_play()
 
         played_hands = self.player_hand[:self.current_hand] 
-        np.dot(played_hands, VALUES)
+        player_values = np.dot(played_hands, VALUES)
+        results = -np.ones_like(player_values)
+        results[player_values + 10 * (played_hands[:,0] > 0) == self.dealer_hand] = 0
+        results[player_values == self.dealer_hand] = 0
+        results[player_values + 10 * (played_hands[:,0] > 0) > self.dealer_hand] = 1
+        results[player_values > self.dealer_hand] = 1
+        results[self.dealer_hand > 21] = 1
+        results[player_values > 21] = 0 # already lost in hit
 
         # winnings = 0
-        # for i in range(self.current_hand):             
-        #     if np.dot(self.player_hand[i], VALUES) > 21:
-        #         winnings += 0 # already lost
+        # for i in range(self.current_hand):   
+        #     player_value = np.dot(self.player_hand[i], VALUES)          
+        #     if player_value > 21:
+        #         winnings += 0 # already lost in hit
         #     elif self.delear_hand > 21:
         #         winnings += self.bet_size[i]
-        #     elif np.dot(self.player_hand[i], VALUES) > self.delear_hand:
+        #     elif player_value > self.delear_hand:
         #         winnings += self.bet_size[i]
-        #     elif np.dot(self.player_hand[i], VALUES) == self.delear_hand:
+        #     elif player_value + 10 * (self.player_hand[i][0] > 0) > self.delear_hand:
+        #         winnings += self.bet_size[i]
+        #     elif player_value == self.delear_hand:
+        #         winnings += 0
+        #     elif player_value + 10 * (self.player_hand[i][0] > 0) == self.delear_hand:
         #         winnings += 0
         #     else:
         #         winnings -= self.bet_size[i]
+
+        return np.dot(results, self.bet_size[:self.current_hand])
     
     def stand(self):
         self.current_hand += 1
@@ -76,10 +90,14 @@ class Blackjack():
         
     def double_down(self):
         self.bet_size[self.current_hand] *= 2
-        return self.hit()
+        return self.state(), self.hit()[1] + self.stand()[1]
     
     def split(self):
-        ...
+        self.player_hand[self.current_hand] /= 2
+        self.player_hand[self.current_hand+1] = self.player_hand[self.current_hand].copy()
+        self.bet_size[self.current_hand+1] = self.bet_size[self.current_hand]
+        return self.state(), 0
+
 
 
 
