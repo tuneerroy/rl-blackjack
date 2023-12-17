@@ -7,7 +7,7 @@ class Blackjack():
         self.deck = np.array([1,2,3,4,5,6,7,8,9,10,10,10,10]*4*DECKS)
 
     def state(self):
-        return self.player_hand, self.delear_hand, self.current_hand, self.bet_size
+        return self.player_hand, self.dealer_hand, self.current_hand, self.bet_size, self.insurance_bet
         
     def deal_card(self):
         card = self.deck[self.card_idx]
@@ -26,11 +26,13 @@ class Blackjack():
         self.player_hand[self.current_hand][self.deal_card()-1] += 1
         self.player_hand[self.current_hand][self.deal_card()-1] += 1
         
-        self.delear_hand = self.deal_card()
+        self.dealer_hand = self.deal_card()
         
         
         self.bet_size = np.zeros(4*DECKS)
         self.bet_size[0] = bet_size
+
+        self.insurance_bet = 0
 
         self.is_terminal = False
 
@@ -60,20 +62,22 @@ class Blackjack():
         results[self.dealer_hand > 21] = 1
         results[player_values > 21] = 0 # already lost in hit
 
+        results[results == 1 & player_values == 21] = 1.5 # blackjack bonus
+
         # winnings = 0
         # for i in range(self.current_hand):   
         #     player_value = np.dot(self.player_hand[i], VALUES)          
         #     if player_value > 21:
         #         winnings += 0 # already lost in hit
-        #     elif self.delear_hand > 21:
+        #     elif self.dealer_hand > 21:
         #         winnings += self.bet_size[i]
-        #     elif player_value > self.delear_hand:
+        #     elif player_value > self.dealer_hand:
         #         winnings += self.bet_size[i]
-        #     elif player_value + 10 * (self.player_hand[i][0] > 0) > self.delear_hand:
+        #     elif player_value + 10 * (self.player_hand[i][0] > 0) > self.dealer_hand:
         #         winnings += self.bet_size[i]
-        #     elif player_value == self.delear_hand:
+        #     elif player_value == self.dealer_hand:
         #         winnings += 0
-        #     elif player_value + 10 * (self.player_hand[i][0] > 0) == self.delear_hand:
+        #     elif player_value + 10 * (self.player_hand[i][0] > 0) == self.dealer_hand:
         #         winnings += 0
         #     else:
         #         winnings -= self.bet_size[i]
@@ -90,13 +94,32 @@ class Blackjack():
         
     def double_down(self):
         self.bet_size[self.current_hand] *= 2
-        return self.state(), self.hit()[1] + self.stand()[1]
+        reward = self.hit()[1] + self.stand()[1]
+        return self.state(), reward
     
     def split(self):
         self.player_hand[self.current_hand] /= 2
         self.player_hand[self.current_hand+1] = self.player_hand[self.current_hand].copy()
         self.bet_size[self.current_hand+1] = self.bet_size[self.current_hand]
         return self.state(), 0
+    
+    def insurance(self, bet_size=0.5):
+        self.insurance_bet = self.bet_size[self.current_hand] * bet_size
+        return self.state(), 0
+    
+    def get_actions(self):
+        return [
+            self.hit,
+            self.stand,
+            self.double_down,
+            self.split,
+        ] + [
+            lambda: self.insurance(0.1),
+            lambda: self.insurance(0.2),
+            lambda: self.insurance(0.3),
+            lambda: self.insurance(0.4),
+            lambda: self.insurance(0.5),
+        ]
 
 
 
