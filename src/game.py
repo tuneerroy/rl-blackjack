@@ -1,10 +1,37 @@
 import numpy as np
+from enum import Enum
+
 DECKS = 6
 VALUES = np.array([1,2,3,4,5,6,7,8,9,10])
+
+
+class Actions(Enum):
+    HIT = 0
+    STAND = 1
+    DOUBLE_DOWN = 2
+    SPLIT = 3
+    INSURANCE_1 = 4
+    INSURANCE_2 = 5
+    INSURANCE_3 = 6
+    INSURANCE_4 = 7
+    INSURANCE_5 = 8
+
 
 class Blackjack():
     def __init__(self):
         self.deck = np.array([1,2,3,4,5,6,7,8,9,10,10,10,10]*4*DECKS)
+
+        self.actions = {
+            Actions.HIT: self.hit,
+            Actions.STAND: self.stand,
+            Actions.DOUBLE_DOWN: self.double_down,
+            Actions.SPLIT: self.split,
+            Actions.INSURANCE_1: self.insurance,
+            Actions.INSURANCE_2: self.insurance,
+            Actions.INSURANCE_3: self.insurance,
+            Actions.INSURANCE_4: self.insurance,
+            Actions.INSURANCE_5: self.insurance,
+        }
 
     def state(self):
         return self.player_hand, self.dealer_hand, self.current_hand, self.bet_size, self.insurance_bet
@@ -41,9 +68,9 @@ class Blackjack():
     def hit(self):
         self.player_hand[self.current_hand][self.deal_card()-1] += 1
         if np.dot(self.player_hand[self.current_hand], VALUES) > 21:
-            return self.state(), -self.bet_size[self.current_hand]
+            return -self.bet_size[self.current_hand]
         else:
-            return self.state(), 0
+            return 0
         
     def dealer_play(self):
         while self.dealer_hand < 17:
@@ -88,38 +115,27 @@ class Blackjack():
         self.current_hand += 1
         if not self.player_hand[self.current_hand].any():
             self.is_terminal = True
-            return self.state(), self.calculate_winnings()
+            return self.calculate_winnings()
         else:
-            return self.state(), 0
+            return 0
         
     def double_down(self):
         self.bet_size[self.current_hand] *= 2
-        reward = self.hit()[1] + self.stand()[1]
-        return self.state(), reward
+        return self.hit()[1] + self.stand()[1]
     
     def split(self):
         self.player_hand[self.current_hand] /= 2
         self.player_hand[self.current_hand+1] = self.player_hand[self.current_hand].copy()
         self.bet_size[self.current_hand+1] = self.bet_size[self.current_hand]
-        return self.state(), 0
+        return 0
     
     def insurance(self, bet_size=0.5):
         self.insurance_bet = self.bet_size[self.current_hand] * bet_size
-        return self.state(), 0
+        return 0
     
-    def get_actions(self):
-        return [
-            self.hit,
-            self.stand,
-            self.double_down,
-            self.split,
-        ] + [
-            lambda: self.insurance(0.1),
-            lambda: self.insurance(0.2),
-            lambda: self.insurance(0.3),
-            lambda: self.insurance(0.4),
-            lambda: self.insurance(0.5),
-        ]
+    def perform_action(self, action):
+        reward = self.actions[action]()
+        return self.state(), reward
     
     def is_terminal(self):
         return self.is_terminal
