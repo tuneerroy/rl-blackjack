@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "rl-blackjack"
+version = "0.1.0"
+description = ""
+authors = ["Vincent Cai <caiv@seas.upenn.edu>", "Kunli Zhang <kunliz@seas.upenn.edu>", "Tuneer Roy <tuneer@seas.upenn.edu>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
