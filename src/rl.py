@@ -51,6 +51,7 @@ class Agent:
         self.Q[(state, action)] += self.alpha * (
             reward + self.gamma * best_action_value - self.Q[(state, action)]
         )
+        self.visits[(state, action)] += 1
 
 
 def run_episode(world: World, agent: Agent, max_steps: int = 100) -> float:
