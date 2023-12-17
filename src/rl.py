@@ -22,6 +22,9 @@ class World(ABC):
 
 
 class Agent(ABC):
+    def __init__(self, world: World) -> None:
+        self.world = world
+
     def choose_action(self, state: State) -> Action:
         raise NotImplementedError
     
@@ -41,3 +44,7 @@ def run_episode(world: World, agent: Agent, max_steps: int = 100) -> float:
         if world.is_terminal(state):
             break
     return total_reward
+
+def teach_agent(world: World, agent: Agent, num_episodes: int = 100, max_steps: int = 100) -> None:
+    for _ in range(num_episodes):
+        run_episode(world, agent, max_steps)
