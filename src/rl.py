@@ -1,4 +1,5 @@
 from abc import ABC
+from collections import defaultdict
 
 class Hashable(ABC):
     def __hash__(self) -> int:
@@ -24,15 +25,24 @@ class World(ABC):
         raise NotImplementedError
 
 
-class Agent(ABC):
-    def __init__(self, world: World) -> None:
+class Agent():
+    def __init__(self, world: World, alpha: float = 0.1, gamma: float = 0.9):
         self.world = world
+        self.alpha = alpha
+        self.gamma = gamma
+        self.Q: dict[tuple[State, Action], float] = defaultdict(lambda: 0)
+        self.visits: dict[tuple[State, Action], int] = defaultdict(lambda: 0)
 
     def choose_action(self, state: State) -> Action:
-        raise NotImplementedError
-    
+        actions = self.world.get_actions(state)
+        get_Q = lambda a: self.Q[(state, a)]
+        get_V = lambda a: 1/(1 + self.visits[(state, a)])
+        return max(actions, key=lambda a: get_Q(a) + get_V(a))
+
     def update(self, state: State, action: Action, reward: float, next_state: State) -> None:
-        raise NotImplementedError
+        actions = self.world.get_actions(next_state)
+        best_action_value = max(self.Q[(next_state, a)] for a in actions)
+        self.Q[(state, action)] += self.alpha * (reward + self.gamma * best_action_value - self.Q[(state, action)])
 
 
 def run_episode(world: World, agent: Agent, max_steps: int = 100) -> float:
@@ -48,6 +58,9 @@ def run_episode(world: World, agent: Agent, max_steps: int = 100) -> float:
             break
     return total_reward
 
-def teach_agent(world: World, agent: Agent, num_episodes: int = 100, max_steps: int = 100) -> None:
+def teach_agent(world: World, agent: Agent = None, num_episodes: int = 100, max_steps: int = 100) -> Agent:
+    if agent is None:
+        agent = Agent()
     for _ in range(num_episodes):
         run_episode(world, agent, max_steps)
+    return agent
