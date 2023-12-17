@@ -1,2 +1,3 @@
-# rl-blackjack
-Apply RL to Blackjack
+# Reinforcement Learning on Blackjack
+
+## Final Project for CIS 6250
