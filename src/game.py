@@ -2,8 +2,18 @@ from enum import Enum
 
 import numpy as np
 
+from rl import State
+
 DECKS = 6
 VALUES = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+
+
+class BlackjackState(State):
+    def __init__(self, s):
+        self.s = s
+
+    def __hash__(self):
+        return hash(self.s)
 
 
 class Actions(Enum):
@@ -35,12 +45,14 @@ class Blackjack:
         }
 
     def state(self):
-        return (
-            self.player_hand,
-            self.dealer_hand,
-            self.current_hand,
-            self.bet_size,
-            self.insurance_bet,
+        return BlackjackState(
+            (
+                self.player_hand,
+                self.dealer_hand,
+                self.current_hand,
+                self.bet_size,
+                self.insurance_bet,
+            )
         )
 
     def deal_card(self):
@@ -147,3 +159,6 @@ class Blackjack:
 
     def is_terminal(self):
         return self.is_terminal
+
+    def get_actions(self):
+        ...

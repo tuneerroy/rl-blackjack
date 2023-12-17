@@ -22,10 +22,10 @@ class World(ABC):
     def get_actions(self, state: State) -> list[Action]:
         raise NotImplementedError
 
-    def get_reward_and_state(self, state: State, action: Action) -> tuple[float, State]:
+    def perform_action(self, action: Action) -> tuple[float, State]:
         raise NotImplementedError
 
-    def is_terminal(self, state: State) -> bool:
+    def is_terminal(self) -> bool:
         raise NotImplementedError
 
 
