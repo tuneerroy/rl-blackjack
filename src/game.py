@@ -83,13 +83,6 @@ class Blackjack:
 
         return self.state()
 
-    def hit(self):
-        self.player_hand[self.current_hand][self.deal_card() - 1] += 1
-        if np.dot(self.player_hand[self.current_hand], VALUES) > 21:
-            return -self.bet_size[self.current_hand]
-        else:
-            return 0
-
     def dealer_play(self):
         while self.dealer_hand < 17:
             self.dealer_hand += self.deal_card()
@@ -136,10 +129,20 @@ class Blackjack:
             return self.calculate_winnings()
         else:
             return 0
+        
+    def hit(self):
+        self.player_hand[self.current_hand][self.deal_card() - 1] += 1
+        if np.dot(self.player_hand[self.current_hand], VALUES) > 21:
+            return -self.bet_size[self.current_hand] + self.stand()
+        else:
+            return 0
 
     def double_down(self):
         self.bet_size[self.current_hand] *= 2
-        return self.hit()[1] + self.stand()[1]
+        reward = self.hit()
+        if not self.is_terminal:
+            reward += self.stand()
+        return reward
 
     def split(self):
         self.player_hand[self.current_hand] /= 2
@@ -161,4 +164,12 @@ class Blackjack:
         return self.is_terminal
 
     def get_actions(self):
-        ...
+        actions = [Actions.HIT, Actions.STAND]
+        if 9 <= np.dot(self.player_hand[self.current_hand], VALUES) <= 11:
+            actions.append(Actions.DOUBLE_DOWN)
+        if np.sum(self.player_hand[self.current_hand]) == 2 and np.max(self.player_hand[self.current_hand]) == 2:
+            actions.append(Actions.SPLIT)
+        if self.dealer_hand == 1:
+            actions.extend([Actions.INSURANCE_1, Actions.INSURANCE_2, Actions.INSURANCE_3, Actions.INSURANCE_4, Actions.INSURANCE_5])
+        return actions
+        
