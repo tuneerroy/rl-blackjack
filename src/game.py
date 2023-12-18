@@ -28,12 +28,11 @@ class BlackjackState(State):
         return self.s
 
     def __hash__(self):
-        self.s = list(self.s)
-        for i in range(len(self.s)):
-            if isinstance(self.s[i], np.ndarray):
-                self.s[i] = self.s[i].tostring()
-        self.s = tuple(self.s)
-        return hash(self.s)
+        s = list(self.s)
+        for i in range(len(s)):
+            if isinstance(s[i], np.ndarray):
+                s[i] = self.s[i].tostring()
+        return hash(tuple(s))
 
     def __str__(self):
         return str(self.s)
