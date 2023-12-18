@@ -21,7 +21,7 @@ class Game(ABC):
     def state(self) -> State:
         raise NotImplementedError
 
-    def get_actions(self, state: State) -> list[Action]:
+    def get_actions(self) -> list[Action]:
         raise NotImplementedError
 
     def perform_action(self, action: Action) -> tuple[State, float]:
@@ -45,7 +45,7 @@ class Agent:
             self.visits: dict[tuple[State, Action], int] = defaultdict(lambda: 0)
 
     def choose_action(self, world: Game, state: State) -> Action:
-        actions = world.get_actions(state)
+        actions = world.get_actions()
         get_Q = lambda a: self.Q[(state, a)]
         get_V = lambda a: 1 / (1 + self.visits[(state, a)])
         return max(actions, key=lambda a: get_Q(a) + get_V(a))
