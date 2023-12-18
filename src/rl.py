@@ -110,6 +110,7 @@ def teach_agent(
 ) -> Agent:
     if agent is None:
         agent = Agent()
+    world.start_game()
     for _ in range(num_episodes):
         run_episode(world, agent, max_steps)
     return agent
