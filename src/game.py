@@ -143,13 +143,15 @@ class Blackjack(Game):
 
         played_hands = self.hero_hand[: self.num_hands]
         has_ace = self.hero_has_ace[: self.num_hands]
-        results = -np.ones_like(played_hands)
-        results[played_hands + 10 * has_ace == self.dealer_hand] = 0
-        results[played_hands == self.dealer_hand] = 0
-        results[played_hands + 10 * has_ace > self.dealer_hand] = 1
-        results[played_hands > self.dealer_hand] = 1
+
+        hand_values = played_hands + 10 * has_ace
+        hand_values[hand_values > 21] = played_hands[hand_values > 21]
+
+        results = -np.ones_like(hand_values)
+        results[hand_values == self.dealer_hand] = 0
+        results[hand_values > self.dealer_hand] = 1
         results[self.dealer_hand > 21] = 1
-        results[played_hands > 21] = 0  # already lost in hit
+        results[hand_values > 21] = 0  # already lost in hit
 
         results[
             (results == 1)
