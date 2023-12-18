@@ -123,6 +123,7 @@ class Blackjack(Game):
         has_ace = self.dealer_hand == 1 or new_card == 1
         self.dealer_hand += new_card
         if self.dealer_hand == 11 and has_ace:
+            self.dealer_hand += 10
             return True  # blackjack
 
         while self.dealer_hand < 21:
