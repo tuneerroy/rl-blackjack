@@ -58,7 +58,7 @@ class Agent:
         reward: float,
         next_state: State,
     ) -> None:
-        actions = world.get_actions(next_state)
+        actions = world.get_actions()
         best_action_value = max(self.Q[(next_state, a)] for a in actions)
         self.Q[(state, action)] += self.alpha * (
             reward + self.gamma * best_action_value - self.Q[(state, action)]
