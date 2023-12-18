@@ -30,6 +30,9 @@ class Game(ABC):
     def is_terminal(self) -> bool:
         raise NotImplementedError
 
+    def start_game(self) -> None:
+        raise NotImplementedError
+
 
 class Agent:
     def __init__(self, alpha: float = 0.1, gamma: float = 0.9, filename: str = None):
