@@ -104,7 +104,7 @@ class Blackjack(Game):
 
         self.insurance_bet = 0
 
-        self.is_terminal = False
+        self.terminal = False
 
         return self.state()
 
@@ -158,7 +158,7 @@ class Blackjack(Game):
     def stand(self):
         self.current_hand += 1
         if not self.player_hand[self.current_hand].any():
-            self.is_terminal = True
+            self.terminal = True
             return self.calculate_winnings()
         else:
             return 0
@@ -173,7 +173,7 @@ class Blackjack(Game):
     def double_down(self):
         self.bet_size[self.current_hand] *= 2
         reward = self.hit()
-        if not self.is_terminal:
+        if not self.terminal:
             reward += self.stand()
         return reward
 
@@ -195,7 +195,7 @@ class Blackjack(Game):
         return self.state(), reward
 
     def is_terminal(self):
-        return self.is_terminal
+        return self.terminal
 
     def get_actions(self):
         actions = [Actions.HIT, Actions.STAND]
