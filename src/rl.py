@@ -65,27 +65,23 @@ class Agent:
         self.visits[(state, action)] = self.visits[(state, action)] + 1
 
 
-def run_episode(world: Game, agent: Agent, max_steps: int = 100) -> float:
+def run_episode(world: Game, agent: Agent) -> float:
     state = world.state()
     total_reward = 0.0
-    for _ in range(max_steps):
+    while not world.is_terminal():
         action = agent.choose_action(world, state)
         next_state, reward = world.perform_action(action)
         agent.update(world, state, action, reward, next_state)
         state = next_state
         total_reward += reward
-        if world.is_terminal():
-            break
     return total_reward
 
 
-def teach_agent(
-    world: Game, agent: Agent = None, num_episodes: int = 100, max_steps: int = 100
-) -> Agent:
+def teach_agent(world: Game, agent: Agent = None, num_episodes: int = 100) -> Agent:
     if agent is None:
         agent = Agent()
-    world.start_game()
     avg_reward_sum = 0.0
     for _ in range(num_episodes):
-        avg_reward_sum += run_episode(world, agent, max_steps)
+        world.start_game()
+        avg_reward_sum += run_episode(world, agent)
     return agent, avg_reward_sum / num_episodes
