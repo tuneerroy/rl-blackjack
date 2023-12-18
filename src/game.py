@@ -7,7 +7,6 @@ from rl import Action, Game, State
 DECKS = 6
 VALUES = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 
-
 class Actions(Enum):
     HIT = 0
     STAND = 1
@@ -71,7 +70,9 @@ class Blackjack(Game):
     def state(self):
         return BlackjackState(
             (
-                self.player_hand,
+                self.hero_hand,
+                self.hero_has_ace,
+                self.has_hit,
                 self.dealer_hand,
                 self.current_hand,
                 self.bet_size,
@@ -83,6 +84,13 @@ class Blackjack(Game):
         card = self.deck[self.card_idx]
         self.card_idx += 1
         return card
+    
+    def setup_hand(self, idx, cards, bet_size):
+        self.hero_hand[idx] = sum(cards)
+        self.hero_has_ace[idx] = any(c == 1 for c in cards)
+        self.hero_can_split[idx] = cards[0] == cards[1]
+        self.hero_has_hit[idx] = False
+        self.bet_size[idx] = bet_size
 
     def start_game(self, bet_size=1):
         # reset deck
@@ -97,14 +105,12 @@ class Blackjack(Game):
         # self.player_hand[self.current_hand][self.deal_card() - 1] += 1
         self.hero_hand = np.zeros(4 * DECKS)
         self.hero_has_ace = np.zeros(4 * DECKS)
-        cards = [self.deal_card(), self.deal_card()]
-        self.hero_hand[0] = sum(cards)
-        self.hero_has_ace[0] = any(c == 1 for c in cards)
-
-        self.dealer_hand = self.deal_card()
-
+        self.hero_can_split = np.zeros(4 * DECKS)
+        self.hero_has_hit = np.zeros(4 * DECKS)
         self.bet_size = np.zeros(4 * DECKS)
-        self.bet_size[0] = bet_size
+        self.setup_hand(0, [self.deal_card(), self.deal_card()], bet_size)
+        
+        self.dealer_hand = self.deal_card()
 
         self.insurance_bet = 0
 
@@ -133,15 +139,16 @@ class Blackjack(Game):
         )
 
         played_hands = self.hero_hand[: self.current_hand]
+        has_ace = self.hero_has_ace[: self.current_hand]
         results = -np.ones_like(played_hands)
-        results[played_hands + 10 * (played_hands[:, 0] > 0) == self.dealer_hand] = 0
-        results[player_values == self.dealer_hand] = 0
-        results[player_values + 10 * (played_hands[:, 0] > 0) > self.dealer_hand] = 1
-        results[player_values > self.dealer_hand] = 1
+        results[played_hands + 10 * has_ace == self.dealer_hand] = 0
+        results[played_hands == self.dealer_hand] = 0
+        results[played_hands + 10 * self.hero_has_ace > self.dealer_hand] = 1
+        results[played_hands > self.dealer_hand] = 1
         results[self.dealer_hand > 21] = 1
-        results[player_values > 21] = 0  # already lost in hit
+        results[played_hands > 21] = 0  # already lost in hit
 
-        results[(results == 1) & (player_values == 21)] = 1.5  # blackjack bonus
+        results[(results == 1) & (played_hands == 11) & ~self.hero_has_hit[:self.current_hand]] = 1.5  # blackjack bonus
 
         # winnings = 0
         # for i in range(self.current_hand):
@@ -165,15 +172,16 @@ class Blackjack(Game):
 
     def stand(self):
         self.current_hand += 1
-        if not self.player_hand[self.current_hand].any():
+        if self.hero_hand[self.current_hand] == 0:
             self.terminal = True
             return self.calculate_winnings()
         else:
             return 0
 
     def hit(self):
-        self.player_hand[self.current_hand][self.deal_card() - 1] += 1
-        if np.dot(self.player_hand[self.current_hand], VALUES) > 21:
+        self.hero_hand[self.current_hand] += self.deal_card()
+        self.hero_has_hit[self.current_hand] = True
+        if self.hero_hand[self.current_hand] > 21:
             return -self.bet_size[self.current_hand] + self.stand()
         else:
             return 0
@@ -186,11 +194,8 @@ class Blackjack(Game):
         return reward
 
     def split(self):
-        self.player_hand[self.current_hand] /= 2
-        self.player_hand[self.current_hand + 1] = self.player_hand[
-            self.current_hand
-        ].copy()
-        self.bet_size[self.current_hand + 1] = self.bet_size[self.current_hand]
+        self.setup_hand(self.current_hand, [self.hero_hand[self.current_hand] // 2, self.deal_card()], self.bet_size[self.current_hand])
+        self.setup_hand(self.current_hand + 1, [self.hero_hand[self.current_hand] // 2, self.deal_card()], self.bet_size[self.current_hand])
         return 0
 
     def insurance(self, bet_size=0.5):
@@ -207,12 +212,9 @@ class Blackjack(Game):
 
     def get_actions(self):
         actions = [Actions.HIT, Actions.STAND]
-        if 9 <= np.dot(self.player_hand[self.current_hand], VALUES) <= 11:
+        if not self.hero_has_hit[self.current_hand] and 9 <= self.hero_hand[self.current_hand] <= 11:
             actions.append(Actions.DOUBLE_DOWN)
-        if (
-            np.sum(self.player_hand[self.current_hand]) == 2
-            and np.max(self.player_hand[self.current_hand]) == 2
-        ):
+        if not self.hero_has_hit[self.current_hand] and self.hero_can_split[self.current_hand]:
             actions.append(Actions.SPLIT)
         if self.dealer_hand == 1 and self.insurance == 0:
             actions.extend(
