@@ -34,17 +34,21 @@ class Game(ABC):
         raise NotImplementedError
 
 
+def default_zero() -> float:
+    return 0.0
+
+
 class Agent:
     def __init__(self, alpha: float = 0.1, gamma: float = 0.9):
         self.alpha = alpha
         self.gamma = gamma
-        self.Q: dict[tuple[State, Action], float] = dict()
-        self.visits: dict[tuple[State, Action], int] = dict()
+        self.Q: defaultdict[tuple[State, Action], float] = defaultdict(default_zero)
+        self.visits: defaultdict[tuple[State, Action], int] = defaultdict(default_zero)
 
     def choose_action(self, world: Game, state: State) -> Action:
         actions = world.get_actions()
-        get_Q = lambda a: self.Q.get((state, a), 0)
-        get_V = lambda a: 1 / (1 + self.visits.get((state, a), 0))
+        get_Q = lambda a: self.Q[(state, a)]
+        get_V = lambda a: 1 / (1 + self.visits[(state, a)])
         return max(actions, key=lambda a: get_Q(a) + get_V(a))
 
     def update(
@@ -56,12 +60,11 @@ class Agent:
         next_state: State,
     ) -> None:
         actions = world.get_actions()
-        best_action_value = max(self.Q.get((next_state, a), 0) for a in actions)
-        prev_Q = self.Q.get((state, action), 0)
-        self.Q[(state, action)] = prev_Q + self.alpha * (
-            reward + self.gamma * best_action_value - prev_Q
+        best_action_value = max(self.Q[(next_state, a)] for a in actions)
+        self.Q[(state, action)] += self.alpha * (
+            reward + self.gamma * best_action_value - self.Q[(state, action)]
         )
-        self.visits[(state, action)] = self.visits.get((state, action), 0) + 1
+        self.visits[(state, action)] = self.visits[(state, action)] + 1
 
 
 def run_episode(world: Game, agent: Agent, max_steps: int = 100) -> float:
