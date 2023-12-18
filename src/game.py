@@ -84,8 +84,14 @@ class Blackjack:
         return self.state()
 
     def dealer_play(self):
-        while self.dealer_hand < 17:
-            self.dealer_hand += self.deal_card()
+        has_ace = self.dealer_hand == 1
+        while self.dealer_hand < 21:
+            new_card = self.deal_card()
+            has_ace = has_ace or new_card == 1
+            self.dealer_hand += new_card
+            if 17 <= self.dealer_hand <= 21 or 17 <= self.dealer_hand + 10 * has_ace <= 21:
+                break
+        
 
     def calculate_winnings(self):
         self.dealer_play()
