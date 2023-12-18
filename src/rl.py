@@ -30,15 +30,14 @@ class World(ABC):
 
 
 class Agent:
-    def __init__(self, world: World, alpha: float = 0.1, gamma: float = 0.9):
-        self.world = world
+    def __init__(self, alpha: float = 0.1, gamma: float = 0.9):
         self.alpha = alpha
         self.gamma = gamma
         self.Q: dict[tuple[State, Action], float] = defaultdict(lambda: 0)
         self.visits: dict[tuple[State, Action], int] = defaultdict(lambda: 0)
 
-    def choose_action(self, state: State) -> Action:
-        actions = self.world.get_actions(state)
+    def choose_action(self, world: World, state: State) -> Action:
+        actions = world.get_actions(state)
         get_Q = lambda a: self.Q[(state, a)]
         get_V = lambda a: 1 / (1 + self.visits[(state, a)])
         return max(actions, key=lambda a: get_Q(a) + get_V(a))
@@ -58,7 +57,7 @@ def run_episode(world: World, agent: Agent, max_steps: int = 100) -> float:
     state = world.get_current_state()
     total_reward = 0.0
     for _ in range(max_steps):
-        action = agent.choose_action(state)
+        action = agent.choose_action(world, state)
         reward, next_state = world.get_reward_and_state(state, action)
         agent.update(state, action, reward, next_state)
         state = next_state
