@@ -39,7 +39,9 @@ def default_zero() -> float:
 
 
 class Agent:
-    def __init__(self, alpha: float = 0.1, gamma: float = 0.9, exploration: float = 0.5):
+    def __init__(
+        self, alpha: float = 0.1, gamma: float = 0.9, exploration: float = 0.5
+    ):
         self.alpha = alpha
         self.gamma = gamma
         self.exploration = exploration
@@ -75,19 +77,12 @@ def run_episode(world: Game, agent: Agent) -> float:
     total_reward = 0.0
     while not world.is_terminal():
         action = agent.choose_action(world, state)
-<<<<<<< Updated upstream
         print(f"state: {state}")
         print(f"action: {action}")
         next_state, reward = world.perform_action(action)
         print(f"nxt state: {next_state}")
         print(f"reward: {reward}")
         print(f"-" * 30 + "\n")
-=======
-        print(f"{state.get()}")
-        next_state, reward = world.perform_action(action)
-        print(f"{action.get()}, {reward}, {next_state.get()}\n")
-        print("-"*20 + "\n")
->>>>>>> Stashed changes
         agent.update(world, state, action, reward, next_state)
         state = next_state
         total_reward += reward
