@@ -18,13 +18,13 @@ class Action(Hashable):
 
 
 class World(ABC):
-    def get_current_state(self) -> State:
+    def state(self) -> State:
         raise NotImplementedError
 
     def get_actions(self, state: State) -> list[Action]:
         raise NotImplementedError
 
-    def perform_action(self, action: Action) -> tuple[float, State]:
+    def perform_action(self, action: Action) -> tuple[State, float]:
         raise NotImplementedError
 
     def is_terminal(self) -> bool:
@@ -89,15 +89,15 @@ class Agent:
 
 
 def run_episode(world: World, agent: Agent, max_steps: int = 100) -> float:
-    state = world.get_current_state()
+    state = world.state()
     total_reward = 0.0
     for _ in range(max_steps):
         action = agent.choose_action(world, state)
-        reward, next_state = world.get_reward_and_state(state, action)
+        next_state, reward = world.perform_action(state, action)
         agent.update(state, action, reward, next_state)
         state = next_state
         total_reward += reward
-        if world.is_terminal(state):
+        if world.is_terminal():
             break
     return total_reward
 
