@@ -18,7 +18,7 @@ def get_parser():
     parser.add_argument("--new", action="store_true", default=False)
     parser.add_argument("--agent_file", default="agent_data")
     parser.add_argument("--num_episodes", type=int, default=10000)
-    parser.add_argument("--num_checkpoints", type=int, default=1)
+    parser.add_argument("--num_episodes_per_checkpoint", type=int, default=10000)
     return parser
 
 
@@ -28,7 +28,7 @@ def main():
     new_agent = args.new
     agent_file = args.agent_file + ".pkl"
     num_episodes = args.num_episodes
-    num_checkpoints = args.num_checkpoints
+    num_episodes_per_checkpoint = args.num_episodes_per_checkpoint
 
     path = get_path(agent_file)
     if not new_agent and os.path.exists(path):
@@ -37,14 +37,15 @@ def main():
         agent = Agent(gamma=1)
 
     world = Blackjack()
-    per_checkpoint = num_episodes // num_checkpoints
-    for i in range(num_checkpoints):
-        if i == num_checkpoints - 1:
-            per_checkpoint = num_episodes - (num_checkpoints - 1) * per_checkpoint
-
-        agent, avg_reward = teach_agent(world, agent, num_episodes=per_checkpoint)
+    curr_episodes = 0
+    while curr_episodes < num_episodes:
+        episodes = min(num_episodes_per_checkpoint, num_episodes - curr_episodes)
+        agent, avg_reward = teach_agent(world, agent, num_episodes=episodes)
         print(f"Average reward: {avg_reward}")
         pickle.dump(agent, open(path, "wb"))
+
+        curr_episodes += num_episodes_per_checkpoint
+        print(f"Episodes completed: {curr_episodes}")
 
 
 if __name__ == "__main__":
