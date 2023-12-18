@@ -80,8 +80,9 @@ def run_episode(world: Game, agent: Agent) -> float:
 def teach_agent(world: Game, agent: Agent = None, num_episodes: int = 100) -> Agent:
     if agent is None:
         agent = Agent()
+    world.start_game()
     avg_reward_sum = 0.0
     for _ in range(num_episodes):
         world.start_game()
-        avg_reward_sum += run_episode(world, agent)
+        avg_reward_sum += run_episode(world, agent, max_steps)
     return agent, avg_reward_sum / num_episodes
