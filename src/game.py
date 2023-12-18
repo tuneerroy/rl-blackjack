@@ -2,18 +2,10 @@ from enum import Enum
 
 import numpy as np
 
-from rl import State
+from rl import Action, State
 
 DECKS = 6
 VALUES = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-
-
-class BlackjackState(State):
-    def __init__(self, s):
-        self.s = s
-
-    def __hash__(self):
-        return hash(self.s)
 
 
 class Actions(Enum):
@@ -26,6 +18,22 @@ class Actions(Enum):
     INSURANCE_3 = 6
     INSURANCE_4 = 7
     INSURANCE_5 = 8
+
+
+class BlackjackState(State):
+    def __init__(self, s):
+        self.s = s
+
+    def __hash__(self):
+        return hash(self.s)
+
+
+class BlackjackAction(Action):
+    def __init__(self, a: Actions):
+        self.a = a
+
+    def __hash__(self):
+        return hash(self.a)
 
 
 class Blackjack:
@@ -94,7 +102,6 @@ class Blackjack:
             if 17 <= self.dealer_hand + 10 * has_ace <= 21:
                 self.dealer_hand += 10 * has_ace
                 break
-        
 
     def calculate_winnings(self):
         self.dealer_play()
@@ -138,7 +145,7 @@ class Blackjack:
             return self.calculate_winnings()
         else:
             return 0
-        
+
     def hit(self):
         self.player_hand[self.current_hand][self.deal_card() - 1] += 1
         if np.dot(self.player_hand[self.current_hand], VALUES) > 21:
@@ -176,9 +183,19 @@ class Blackjack:
         actions = [Actions.HIT, Actions.STAND]
         if 9 <= np.dot(self.player_hand[self.current_hand], VALUES) <= 11:
             actions.append(Actions.DOUBLE_DOWN)
-        if np.sum(self.player_hand[self.current_hand]) == 2 and np.max(self.player_hand[self.current_hand]) == 2:
+        if (
+            np.sum(self.player_hand[self.current_hand]) == 2
+            and np.max(self.player_hand[self.current_hand]) == 2
+        ):
             actions.append(Actions.SPLIT)
         if self.dealer_hand == 1:
-            actions.extend([Actions.INSURANCE_1, Actions.INSURANCE_2, Actions.INSURANCE_3, Actions.INSURANCE_4, Actions.INSURANCE_5])
-        return actions
-        
+            actions.extend(
+                [
+                    Actions.INSURANCE_1,
+                    Actions.INSURANCE_2,
+                    Actions.INSURANCE_3,
+                    Actions.INSURANCE_4,
+                    Actions.INSURANCE_5,
+                ]
+            )
+        return map(BlackjackAction, actions)
