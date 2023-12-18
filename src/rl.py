@@ -36,13 +36,13 @@ class Game(ABC):
 
 class Agent:
     def __init__(self, alpha: float = 0.1, gamma: float = 0.9, filename: str = None):
+        self.alpha = alpha
+        self.gamma = gamma
+        self.Q: dict[tuple[State, Action], float] = defaultdict(lambda: 0)
+        self.visits: dict[tuple[State, Action], int] = defaultdict(lambda: 0)
+
         if filename is not None:
             self.__load_agent_data(filename)
-        else:
-            self.alpha = alpha
-            self.gamma = gamma
-            self.Q: dict[tuple[State, Action], float] = defaultdict(lambda: 0)
-            self.visits: dict[tuple[State, Action], int] = defaultdict(lambda: 0)
 
     def choose_action(self, world: Game, state: State) -> Action:
         actions = world.get_actions()
@@ -116,6 +116,7 @@ def teach_agent(
     if agent is None:
         agent = Agent()
     world.start_game()
+    avg_reward_sum = 0.0
     for _ in range(num_episodes):
-        run_episode(world, agent, max_steps)
-    return agent
+        avg_reward_sum += run_episode(world, agent, max_steps)
+    return agent, avg_reward_sum / num_episodes
