@@ -2,7 +2,7 @@ from enum import Enum
 
 import numpy as np
 
-from rl import Action, State, World
+from rl import Action, State, Game
 
 DECKS = 6
 VALUES = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
@@ -24,19 +24,35 @@ class BlackjackState(State):
     def __init__(self, s):
         self.s = s
 
+    def get(self):
+        return self.s
+
     def __hash__(self):
-        return hash(self.s)
+        s = list(self.s)
+        for i in range(len(s)):
+            if isinstance(s[i], np.ndarray):
+                s[i] = self.s[i].tostring()
+        return hash(tuple(s))
+
+    def __str__(self):
+        return str(self.s)
 
 
 class BlackjackAction(Action):
     def __init__(self, a: Actions):
         self.a = a
 
+    def get(self):
+        return self.a
+
     def __hash__(self):
         return hash(self.a)
 
+    def __str__(self):
+        return str(self.a)
 
-class Blackjack(World):
+
+class Blackjack(Game):
     def __init__(self):
         self.deck = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10] * 4 * DECKS)
 
@@ -70,7 +86,7 @@ class Blackjack(World):
 
     def start_game(self, bet_size=1):
         # reset deck
-        self.deck = np.random.shuffle(self.deck)
+        np.random.shuffle(self.deck)
         self.card_idx = 0
 
         # set up initial state
@@ -87,7 +103,7 @@ class Blackjack(World):
 
         self.insurance_bet = 0
 
-        self.is_terminal = False
+        self.terminal = False
 
         return self.state()
 
@@ -116,7 +132,7 @@ class Blackjack(World):
         results[self.dealer_hand > 21] = 1
         results[player_values > 21] = 0  # already lost in hit
 
-        results[results == 1 & player_values == 21] = 1.5  # blackjack bonus
+        results[(results == 1) & (player_values == 21)] = 1.5  # blackjack bonus
 
         # winnings = 0
         # for i in range(self.current_hand):
@@ -141,7 +157,7 @@ class Blackjack(World):
     def stand(self):
         self.current_hand += 1
         if not self.player_hand[self.current_hand].any():
-            self.is_terminal = True
+            self.terminal = True
             return self.calculate_winnings()
         else:
             return 0
@@ -156,7 +172,7 @@ class Blackjack(World):
     def double_down(self):
         self.bet_size[self.current_hand] *= 2
         reward = self.hit()
-        if not self.is_terminal:
+        if not self.terminal:
             reward += self.stand()
         return reward
 
@@ -173,11 +189,12 @@ class Blackjack(World):
         return 0
 
     def perform_action(self, action):
+        action = action.get()
         reward = self.actions[action]()
         return self.state(), reward
 
     def is_terminal(self):
-        return self.is_terminal
+        return self.terminal
 
     def get_actions(self):
         actions = [Actions.HIT, Actions.STAND]
@@ -198,4 +215,4 @@ class Blackjack(World):
                     Actions.INSURANCE_5,
                 ]
             )
-        return map(BlackjackAction, actions)
+        return list(map(BlackjackAction, actions))
