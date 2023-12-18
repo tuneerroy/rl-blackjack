@@ -24,6 +24,9 @@ class BlackjackState(State):
     def __init__(self, s):
         self.s = s
 
+    def get(self):
+        return self.s
+
     def __hash__(self):
         self.s = list(self.s)
         for i in range(len(self.s)):
@@ -32,13 +35,22 @@ class BlackjackState(State):
         self.s = tuple(self.s)
         return hash(self.s)
 
+    def __str__(self):
+        return str(self.s)
+
 
 class BlackjackAction(Action):
     def __init__(self, a: Actions):
         self.a = a
 
+    def get(self):
+        return self.a
+
     def __hash__(self):
         return hash(self.a)
+
+    def __str__(self):
+        return str(self.a)
 
 
 class Blackjack(Game):
@@ -178,6 +190,7 @@ class Blackjack(Game):
         return 0
 
     def perform_action(self, action):
+        action = action.get()
         reward = self.actions[action]()
         return self.state(), reward
 
@@ -203,4 +216,4 @@ class Blackjack(Game):
                     Actions.INSURANCE_5,
                 ]
             )
-        return map(BlackjackAction, actions)
+        return list(map(BlackjackAction, actions))
