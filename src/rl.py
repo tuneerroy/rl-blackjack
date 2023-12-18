@@ -35,19 +35,16 @@ class Game(ABC):
 
 
 class Agent:
-    def __init__(self, alpha: float = 0.1, gamma: float = 0.9, filename: str = None):
+    def __init__(self, alpha: float = 0.1, gamma: float = 0.9):
         self.alpha = alpha
         self.gamma = gamma
-        self.Q: dict[tuple[State, Action], float] = defaultdict(lambda: 0)
-        self.visits: dict[tuple[State, Action], int] = defaultdict(lambda: 0)
-
-        if filename is not None:
-            self.__load_agent_data(filename)
+        self.Q: dict[tuple[State, Action], float] = dict()
+        self.visits: dict[tuple[State, Action], int] = dict()
 
     def choose_action(self, world: Game, state: State) -> Action:
         actions = world.get_actions()
-        get_Q = lambda a: self.Q[(state, a)]
-        get_V = lambda a: 1 / (1 + self.visits[(state, a)])
+        get_Q = lambda a: self.Q.get((state, a), 0)
+        get_V = lambda a: 1 / (1 + self.visits.get((state, a), 0))
         return max(actions, key=lambda a: get_Q(a) + get_V(a))
 
     def update(
@@ -59,41 +56,12 @@ class Agent:
         next_state: State,
     ) -> None:
         actions = world.get_actions()
-        best_action_value = max(self.Q[(next_state, a)] for a in actions)
-        self.Q[(state, action)] += self.alpha * (
-            reward + self.gamma * best_action_value - self.Q[(state, action)]
+        best_action_value = max(self.Q.get((next_state, a), 0) for a in actions)
+        prev_Q = self.Q.get((state, action), 0)
+        self.Q[(state, action)] = prev_Q + self.alpha * (
+            reward + self.gamma * best_action_value - prev_Q
         )
-        self.visits[(state, action)] += 1
-
-    def __load_agent_data(self, filename: str) -> None:
-        if not os.path.isfile(filename):
-            raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), filename)
-
-        with open(filename) as f:
-            for line in f:
-                if line == "--\n":
-                    break
-                state, action, value = line.split(",")
-                self.Q[(state, action)] = float(value)
-            for line in f:
-                if line == "--\n":
-                    break
-                state, action, value = line.split(",")
-                self.visits[(state, action)] = int(value)
-            self.alpha, self.gamma = map(float, f.readline().split(","))
-
-    def dump_agent_data(self, filename: str, override: bool = False) -> None:
-        if not override and os.path.isfile(filename):
-            raise FileExistsError(errno.EEXIST, os.strerror(errno.EEXIST), filename)
-
-        with open(filename, "w") as f:
-            for (state, action), value in self.Q.items():
-                f.write(f"{state},{action},{value}\n")
-            f.write("--\n")
-            for (state, action), value in self.visits.items():
-                f.write(f"{state},{action},{value}\n")
-            f.write("--\n")
-            f.write(f"{self.alpha},{self.gamma}\n")
+        self.visits[(state, action)] = self.visits.get((state, action), 0) + 1
 
 
 def run_episode(world: Game, agent: Agent, max_steps: int = 100) -> float:
