@@ -72,10 +72,11 @@ class Blackjack(Game):
             (
                 self.hero_hand,
                 self.hero_has_ace,
-                self.has_hit,
+                self.hero_can_split,
+                self.hero_has_hit,
+                self.bet_size,
                 self.dealer_hand,
                 self.current_hand,
-                self.bet_size,
                 self.insurance_bet,
             )
         )
