@@ -1,5 +1,7 @@
 from abc import ABC
 from collections import defaultdict
+import errno
+import os
 
 
 class Hashable(ABC):
@@ -30,11 +32,14 @@ class World(ABC):
 
 
 class Agent:
-    def __init__(self, alpha: float = 0.1, gamma: float = 0.9):
-        self.alpha = alpha
-        self.gamma = gamma
-        self.Q: dict[tuple[State, Action], float] = defaultdict(lambda: 0)
-        self.visits: dict[tuple[State, Action], int] = defaultdict(lambda: 0)
+    def __init__(self, alpha: float = 0.1, gamma: float = 0.9, filename: str = None):
+        if filename is not None:
+            self.__load_agent_data(filename)
+        else:
+            self.alpha = alpha
+            self.gamma = gamma
+            self.Q: dict[tuple[State, Action], float] = defaultdict(lambda: 0)
+            self.visits: dict[tuple[State, Action], int] = defaultdict(lambda: 0)
 
     def choose_action(self, world: World, state: State) -> Action:
         actions = world.get_actions(state)
@@ -52,7 +57,10 @@ class Agent:
         )
         self.visits[(state, action)] += 1
 
-    def load_agent_data(self, filename: str) -> None:
+    def __load_agent_data(self, filename: str) -> None:
+        if not os.path.isfile(filename):
+            raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), filename)
+
         with open(filename) as f:
             for line in f:
                 if line == "--\n":
@@ -66,7 +74,10 @@ class Agent:
                 self.visits[(state, action)] = int(value)
             self.alpha, self.gamma = map(float, f.readline().split(","))
 
-    def dump_agent_data(self, filename: str) -> None:
+    def dump_agent_data(self, filename: str, override: bool = False) -> None:
+        if not override and os.path.isfile(filename):
+            raise FileExistsError(errno.EEXIST, os.strerror(errno.EEXIST), filename)
+
         with open(filename, "w") as f:
             for (state, action), value in self.Q.items():
                 f.write(f"{state},{action},{value}\n")
