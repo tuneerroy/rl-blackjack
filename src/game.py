@@ -27,7 +27,6 @@ class BlackjackState(State):
     def __hash__(self):
         self.s = list(self.s)
         for i in range(len(self.s)):
-            print(type(self.s[i]))
             if isinstance(self.s[i], np.ndarray):
                 self.s[i] = self.s[i].tostring()
         self.s = tuple(self.s)
