@@ -47,7 +47,9 @@ class Agent:
         actions = world.get_actions()
         get_Q = lambda a: self.Q[(state, a)]
         get_V = lambda a: 1 / (1 + self.visits[(state, a)])
-        return max(actions, key=lambda a: get_Q(a) + get_V(a))
+        max_value = max(get_Q(a) + get_V(a) for a in actions)
+        best_actions = [a for a in actions if get_Q(a) + get_V(a) == max_value]
+        return np.random.choice(best_actions)
 
     def update(
         self,
