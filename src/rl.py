@@ -52,6 +52,30 @@ class Agent:
         )
         self.visits[(state, action)] += 1
 
+    def load_agent_data(self, filename: str) -> None:
+        with open(filename) as f:
+            for line in f:
+                if line == "--\n":
+                    break
+                state, action, value = line.split(",")
+                self.Q[(state, action)] = float(value)
+            for line in f:
+                if line == "--\n":
+                    break
+                state, action, value = line.split(",")
+                self.visits[(state, action)] = int(value)
+            self.alpha, self.gamma = map(float, f.readline().split(","))
+
+    def dump_agent_data(self, filename: str) -> None:
+        with open(filename, "w") as f:
+            for (state, action), value in self.Q.items():
+                f.write(f"{state},{action},{value}\n")
+            f.write("--\n")
+            for (state, action), value in self.visits.items():
+                f.write(f"{state},{action},{value}\n")
+            f.write("--\n")
+            f.write(f"{self.alpha},{self.gamma}\n")
+
 
 def run_episode(world: World, agent: Agent, max_steps: int = 100) -> float:
     state = world.get_current_state()
