@@ -1,7 +1,5 @@
 from abc import ABC
 from collections import defaultdict
-import errno
-import os
 
 
 class Hashable(ABC):

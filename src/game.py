@@ -2,7 +2,7 @@ from enum import Enum
 
 import numpy as np
 
-from rl import Action, State, Game
+from rl import Action, Game, State
 
 DECKS = 6
 VALUES = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
