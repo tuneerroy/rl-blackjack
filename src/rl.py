@@ -51,9 +51,14 @@ class Agent:
         return max(actions, key=lambda a: get_Q(a) + get_V(a))
 
     def update(
-        self, state: State, action: Action, reward: float, next_state: State
+        self,
+        world: Game,
+        state: State,
+        action: Action,
+        reward: float,
+        next_state: State,
     ) -> None:
-        actions = self.world.get_actions(next_state)
+        actions = world.get_actions(next_state)
         best_action_value = max(self.Q[(next_state, a)] for a in actions)
         self.Q[(state, action)] += self.alpha * (
             reward + self.gamma * best_action_value - self.Q[(state, action)]
@@ -97,7 +102,7 @@ def run_episode(world: Game, agent: Agent, max_steps: int = 100) -> float:
     for _ in range(max_steps):
         action = agent.choose_action(world, state)
         next_state, reward = world.perform_action(action)
-        agent.update(state, action, reward, next_state)
+        agent.update(world, state, action, reward, next_state)
         state = next_state
         total_reward += reward
         if world.is_terminal():
