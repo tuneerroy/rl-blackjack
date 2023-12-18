@@ -19,7 +19,7 @@ def main():
         agent = Agent(gamma=1)
 
     world = Blackjack()
-    agent, avg_reward = teach_agent(world, agent, num_episodes=10, max_steps=10)
+    agent, avg_reward = teach_agent(world, agent, num_episodes=100)
     print(f"Average reward: {avg_reward}")
 
     pickle.dump(agent, open(path, "wb"))

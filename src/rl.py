@@ -70,6 +70,7 @@ def run_episode(world: Game, agent: Agent) -> float:
     total_reward = 0.0
     while not world.is_terminal():
         action = agent.choose_action(world, state)
+        print(f"{action} -> {state}")
         next_state, reward = world.perform_action(action)
         agent.update(world, state, action, reward, next_state)
         state = next_state
