@@ -96,7 +96,7 @@ def run_episode(world: Game, agent: Agent, max_steps: int = 100) -> float:
     total_reward = 0.0
     for _ in range(max_steps):
         action = agent.choose_action(world, state)
-        next_state, reward = world.perform_action(state, action)
+        next_state, reward = world.perform_action(action)
         agent.update(state, action, reward, next_state)
         state = next_state
         total_reward += reward
