@@ -103,9 +103,6 @@ class Blackjack(Game):
         self.current_hand = 0
         self.num_hands = 1
 
-        # self.player_hand = np.zeros((4 * DECKS, 10))
-        # self.player_hand[self.current_hand][self.deal_card() - 1] += 1
-        # self.player_hand[self.current_hand][self.deal_card() - 1] += 1
         self.hero_hand = np.zeros(4 * DECKS)
         self.hero_has_ace = np.zeros(4 * DECKS).astype(bool)
         self.hero_can_split = np.zeros(4 * DECKS).astype(bool)
@@ -122,18 +119,21 @@ class Blackjack(Game):
         return self.state()
 
     def dealer_play(self):
-        has_ace = self.dealer_hand == 1
+        new_card = self.deal_card()
+        has_ace = self.dealer_hand == 1 or new_card == 1
+        self.dealer_hand += new_card
+        if self.dealer_hand == 11 and has_ace:
+            return True  # blackjack
+
         while self.dealer_hand < 21:
-            new_card = self.deal_card()
-            if new_card == 10 and has_ace:
-                return True  # blackjack
-            has_ace = has_ace or new_card == 1
-            self.dealer_hand += new_card
             if 17 <= self.dealer_hand <= 21:
                 break
             if 17 <= self.dealer_hand + 10 * has_ace <= 21:
                 self.dealer_hand += 10 * has_ace
                 break
+            new_card = self.deal_card()
+            has_ace = has_ace or new_card == 1
+            self.dealer_hand += new_card
         return False
 
     def calculate_winnings(self):
@@ -152,26 +152,11 @@ class Blackjack(Game):
         results[played_hands > 21] = 0  # already lost in hit
 
         results[
-            (results == 1) & (played_hands == 11) & ~self.hero_has_hit[: self.num_hands]
+            (results == 1)
+            & (played_hands == 11)
+            & (has_ace)
+            & ~self.hero_has_hit[: self.num_hands]
         ] = 1.5  # blackjack bonus
-
-        # winnings = 0
-        # for i in range(self.current_hand):
-        #     player_value = np.dot(self.player_hand[i], VALUES)
-        #     if player_value > 21:
-        #         winnings += 0 # already lost in hit
-        #     elif self.dealer_hand > 21:
-        #         winnings += self.bet_size[i]
-        #     elif player_value > self.dealer_hand:
-        #         winnings += self.bet_size[i]
-        #     elif player_value + 10 * (self.player_hand[i][0] > 0) > self.dealer_hand:
-        #         winnings += self.bet_size[i]
-        #     elif player_value == self.dealer_hand:
-        #         winnings += 0
-        #     elif player_value + 10 * (self.player_hand[i][0] > 0) == self.dealer_hand:
-        #         winnings += 0
-        #     else:
-        #         winnings -= self.bet_size[i]
 
         return np.dot(results, self.bet_size[: self.current_hand]) + insurance_winnings
 
