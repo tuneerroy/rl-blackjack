@@ -1,6 +1,8 @@
 from abc import ABC
 from collections import defaultdict
 
+import numpy as np
+
 
 class Hashable(ABC):
     def __hash__(self) -> int:
@@ -72,8 +74,12 @@ def run_episode(world: Game, agent: Agent) -> float:
     total_reward = 0.0
     while not world.is_terminal():
         action = agent.choose_action(world, state)
-        print(f"{action} -> {state}")
+        print(f"state: {state}")
+        print(f"action: {action}")
         next_state, reward = world.perform_action(action)
+        print(f"nxt state: {next_state}")
+        print(f"reward: {reward}")
+        print(f"-" * 30 + "\n")
         agent.update(world, state, action, reward, next_state)
         state = next_state
         total_reward += reward
@@ -84,7 +90,9 @@ def teach_agent(world: Game, agent: Agent = None, num_episodes: int = 100) -> Ag
     if agent is None:
         agent = Agent()
     avg_reward_sum = 0.0
-    for _ in range(num_episodes):
+    for i in range(num_episodes):
+        print(f"Episode {i + 1}")
+        print("*" * 30 + "\n")
         world.start_game()
         avg_reward_sum += run_episode(world, agent)
     return agent, avg_reward_sum / num_episodes
