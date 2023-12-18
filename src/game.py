@@ -70,7 +70,7 @@ class Blackjack(Game):
 
     def start_game(self, bet_size=1):
         # reset deck
-        self.deck = np.random.shuffle(self.deck)
+        np.random.shuffle(self.deck)
         self.card_idx = 0
 
         # set up initial state
