@@ -5,9 +5,16 @@ from game import Blackjack
 from rl import Agent, teach_agent
 
 
+def get_path(filename: str) -> str:
+    return os.path.join(
+        os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "output", filename
+    )
+
+
 def main():
-    if os.path.exists("agent_data.pkl"):
-        agent = pickle.load(open("agent_data.pkl", "rb"))
+    path = get_path("agent_data.pkl")
+    if os.path.exists(path):
+        agent = pickle.load(open(path, "rb"))
     else:
         agent = Agent(gamma=1)
 
@@ -15,7 +22,7 @@ def main():
     agent, avg_reward = teach_agent(world, agent, num_episodes=10, max_steps=10)
     print(f"Average reward: {avg_reward}")
 
-    pickle.dump(agent, open("agent_data.pkl", "wb"))
+    pickle.dump(agent, open(path, "wb"))
 
 
 if __name__ == "__main__":
