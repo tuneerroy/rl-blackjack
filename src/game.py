@@ -2,7 +2,7 @@ from enum import Enum
 
 import numpy as np
 
-from rl import Action, State, World
+from rl import Action, State, Game
 
 DECKS = 6
 VALUES = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
@@ -36,7 +36,7 @@ class BlackjackAction(Action):
         return hash(self.a)
 
 
-class Blackjack(World):
+class Blackjack(Game):
     def __init__(self):
         self.deck = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10] * 4 * DECKS)
 

@@ -17,7 +17,7 @@ class Action(Hashable):
     pass
 
 
-class World(ABC):
+class Game(ABC):
     def state(self) -> State:
         raise NotImplementedError
 
@@ -41,7 +41,7 @@ class Agent:
             self.Q: dict[tuple[State, Action], float] = defaultdict(lambda: 0)
             self.visits: dict[tuple[State, Action], int] = defaultdict(lambda: 0)
 
-    def choose_action(self, world: World, state: State) -> Action:
+    def choose_action(self, world: Game, state: State) -> Action:
         actions = world.get_actions(state)
         get_Q = lambda a: self.Q[(state, a)]
         get_V = lambda a: 1 / (1 + self.visits[(state, a)])
@@ -88,7 +88,7 @@ class Agent:
             f.write(f"{self.alpha},{self.gamma}\n")
 
 
-def run_episode(world: World, agent: Agent, max_steps: int = 100) -> float:
+def run_episode(world: Game, agent: Agent, max_steps: int = 100) -> float:
     state = world.state()
     total_reward = 0.0
     for _ in range(max_steps):
@@ -103,7 +103,7 @@ def run_episode(world: World, agent: Agent, max_steps: int = 100) -> float:
 
 
 def teach_agent(
-    world: World, agent: Agent = None, num_episodes: int = 100, max_steps: int = 100
+    world: Game, agent: Agent = None, num_episodes: int = 100, max_steps: int = 100
 ) -> Agent:
     if agent is None:
         agent = Agent()
