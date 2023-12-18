@@ -133,7 +133,7 @@ class Blackjack(Game):
         results[self.dealer_hand > 21] = 1
         results[player_values > 21] = 0  # already lost in hit
 
-        results[results == 1 & player_values == 21] = 1.5  # blackjack bonus
+        results[(results == 1) & (player_values == 21)] = 1.5  # blackjack bonus
 
         # winnings = 0
         # for i in range(self.current_hand):
