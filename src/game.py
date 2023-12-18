@@ -89,7 +89,10 @@ class Blackjack:
             new_card = self.deal_card()
             has_ace = has_ace or new_card == 1
             self.dealer_hand += new_card
-            if 17 <= self.dealer_hand <= 21 or 17 <= self.dealer_hand + 10 * has_ace <= 21:
+            if 17 <= self.dealer_hand <= 21:
+                break
+            if 17 <= self.dealer_hand + 10 * has_ace <= 21:
+                self.dealer_hand += 10 * has_ace
                 break
         
 
