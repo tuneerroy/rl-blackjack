@@ -16,14 +16,16 @@ def get_path(filename: str) -> str:
 def get_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument("--new", action="store_true", default=False)
-    parser.add_argument("--agent_file", default="agent_data.pkl")
+    parser.add_argument("--agent_file", default="agent_data")
+    parser.add_argument("--num_episodes", type=int, default=10000)
     return parser
 
 
 def main():
     parser = get_parser()
     new_agent = parser.parse_args().new
-    agent_file = parser.parse_args().agent_file
+    agent_file = parser.parse_args().agent_file + ".pkl"
+    num_episodes = parser.parse_args().num_episodes
 
     path = get_path(agent_file)
     if not new_agent and os.path.exists(path):
@@ -32,7 +34,7 @@ def main():
         agent = Agent(gamma=1)
 
     world = Blackjack()
-    agent, avg_reward = teach_agent(world, agent, num_episodes=100000)
+    agent, avg_reward = teach_agent(world, agent, num_episodes=num_episodes)
     print(f"Average reward: {avg_reward}")
 
     pickle.dump(agent, open(path, "wb"))
