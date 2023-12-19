@@ -65,7 +65,9 @@ class Agent:
         next_state: State,
     ) -> None:
         actions = world.get_actions()
-        best_action_value = max(self.Q[(next_state, a)] for a in actions)
+        best_action_value = (
+            max(self.Q[(next_state, a)] for a in actions) if actions else 0
+        )
         self.Q[(state, action)] += self.alpha * (
             reward + self.gamma * best_action_value - self.Q[(state, action)]
         )
@@ -73,9 +75,9 @@ class Agent:
 
 
 def run_episode(world: Game, agent: Agent) -> float:
-    state = world.state()
     total_reward = 0.0
     while not world.is_terminal():
+        state = world.state()
         action = agent.choose_action(world, state)
         print(f"state: {state}")
         print(f"action: {action}")
@@ -99,9 +101,3 @@ def teach_agent(world: Game, agent: Agent = None, num_episodes: int = 100) -> Ag
         world.start_game()
         avg_reward_sum += run_episode(world, agent)
     return agent, avg_reward_sum / num_episodes
-
-
-def print_Q(agent: Agent):
-    for k, v in agent.Q.items():
-        state, action = k
-        print(f"{state.get()}, {action.get()}, {v}")
