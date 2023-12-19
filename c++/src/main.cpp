@@ -67,15 +67,16 @@ class Blackjack {
   }
 
   uint state() {
+    if (terminal) return 0;
     uint depth = 1;
-    uint res = insuranceBet * depth;
+    uint res = (insuranceBet * 4) * depth;
     depth *= 3;
     res += currentHand * depth;
     depth *= MAX_HANDS;
-    res += dealerHand * depth;
+    res += (dealerHand - 1) * depth;
     depth *= 10;
     for (int i = 0; i < MAX_HANDS; i++) {
-      res += betSize[i] * depth;
+      res += (betSize[i] - 1) * depth;
       depth *= 2;
       res += heroHasHit[i] * depth;
       depth *= 2;
@@ -83,7 +84,7 @@ class Blackjack {
       depth *= 2;
       res += heroHasAce[i] * depth;
       depth *= 2;
-      res += heroHand[i] * depth;
+      res += (heroHand[i] - 2) * depth;
       depth *= 21;
     }
     return res + 1;
@@ -247,11 +248,11 @@ class Blackjack {
     cout << "Dealer: " << dealerHand << endl;
     // For each hand, print the value, hasAce, canSplit, hasHit, betSize, and indicate if it's the current hand
     // first print header with setw
-    cout << "Hand\tValue\tHasAce\tCanSplit\tHasHit\tBet" << endl;
+    cout << "" << setw(10) << left << "Hand" << setw(10) << left << "Has Ace" << setw(10) << left << "Can Split" << setw(10) << left << "Has Hit" << setw(10) << left << "Bet Size" << setw(10) << left << "Current" << endl;
     for (int i = 0; i < numHands; i++) {
-      cout << i << "\t" << heroHand[i] << "\t" << heroHasAce[i] << "\t" << heroCanSplit[i] << "\t" << heroHasHit[i] << "\t" << betSize[i] << "\t" << (i == currentHand ? "*" : "") << endl;
+      cout <<  "" << setw(10) << left << heroHand[i] << setw(10) << left << (heroHasAce[i] ? "v " : " ") << setw(10) << left << (heroCanSplit[i] ? "v " : " ") << setw(10) << left << (heroHasHit[i] ? "v " : " ") << setw(10) << left << betSize[i] << setw(10) << left << (i == currentHand ? "*" : " ") << endl;
     }
-    cout << "Insurance: " << insuranceBet << endl;
+    cout << "Insurance: " << insuranceBet << endl << endl;
   }
 };
 
@@ -282,7 +283,7 @@ class Agent {
   Action chooseAction(const Blackjack& game, uint state) {
     vector<Action> actions = game.getActions();
     vector<Action> bestActions;
-    float bestValue = -1;
+    float bestValue = numeric_limits<float>::lowest();
     for (Action action : actions) {
       float value = Q[state][action];
       if (value > bestValue) {
@@ -302,7 +303,7 @@ class Agent {
     vector<Action> nextActions = game.getActions();
 
     // Find the best Q across all possible next actions
-    float bestValue = numeric_limits<float>::min();
+    float bestValue = numeric_limits<float>::lowest();
     for (Action nextAction : nextActions) {
       bestValue = max(bestValue, Q[nextState][nextAction]);
     }
@@ -314,24 +315,19 @@ class Agent {
 
   float run(Blackjack& game) {
     game.startGame();  // TODO: rename to reset
+    game.printState();
     float totalReward = 0;
     while (!game.isTerminal()) {
       uint state = game.state();
-      cout << "State:" << endl;
-      game.printState();
 
       Action action = chooseAction(game, state);
-      cout << "Action: " << actionNames[action] << std::endl;
 
       float reward = game.performAction(action);
-      cout << "New State:" << endl;
+      cout << "Action: " << actionNames[action] << " -> " << reward << " reward" << endl;
       game.printState();
-      cout << "Reward: " << reward << std::endl;
 
       update(game, state, action, game.state(), reward);
       totalReward += reward;
-
-      cout << string(80, '-') << std::endl;
     }
     return totalReward;
   }
@@ -339,13 +335,15 @@ class Agent {
   void train(Blackjack& game, int episodes) {
     float totalReward = 0;
     for (int i = 0; i < episodes; i++) {
-      cout << "Episode " << i << std::endl;
+      cout << "Episode " << i << std::endl << string(60, '-') << std::endl;
       float reward = run(game);
       cout << "Total Reward: " << reward << std::endl;
-      cout << string(80, '=') << std::endl;
+      cout << std::endl << string(60, '*') << std::endl << std::endl;
       totalReward += reward;
+      if (i != 0 && i % episodes % (episodes/10) == 0) cerr << "Average reward after " << i << " episodes: " << totalReward / i << " (" << (100.0 * i / episodes) << "% complete)" << endl;
     }
-    std::cout << "Average reward: " << totalReward / episodes << std::endl;
+    cerr << "Average reward after " << episodes << " episodes: " << totalReward / episodes << " (100% complete)" << endl;
+    cout << "Average reward: " << totalReward / episodes << std::endl;
   }
 };
 
@@ -354,7 +352,7 @@ int main(int argc, char** argv) {
   Agent agent;
   // fill(&Q[0][0], &Q[0][0] + sizeof(Q) / sizeof(Q[0][0]), 0);
   // fill(&visits[0][0], &visits[0][0] + sizeof(visits) / sizeof(visits[0][0]), 0);
-  int trainingIterations = 10000;
+  int trainingIterations = 1e6;
   if (argc > 1) {
     stringstream ss(argv[1]);
     ss >> trainingIterations;
