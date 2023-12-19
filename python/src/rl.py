@@ -51,7 +51,8 @@ class Agent:
     def choose_action(self, world: Game, state: State) -> Action:
         actions = world.get_actions()
         get_Q = lambda a: self.Q[(state, a)]
-        get_V = lambda a: self.exploration / (1 + self.visits[(state, a)])
+        # get_V = lambda a: self.exploration / (1 + self.visits[(state, a)])
+        get_V = lambda a : 0
         max_value = max(get_Q(a) + get_V(a) for a in actions)
         best_actions = [a for a in actions if get_Q(a) + get_V(a) == max_value]
         return np.random.choice(best_actions)

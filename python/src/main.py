@@ -34,7 +34,7 @@ def main():
     if not new_agent and os.path.exists(path):
         agent = pickle.load(open(path, "rb"))
     else:
-        agent = Agent(gamma=1)
+        agent = Agent()
 
     world = Blackjack()
     curr_episodes = 0

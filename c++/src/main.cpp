@@ -325,7 +325,7 @@ class Agent {
     game.startGame();  // TODO: rename to reset
     float totalReward = 0;
     while (!game.isTerminal()) {
-      game.printState();
+      if (PRINT_MODE != NO_PRINT) game.printState();
       uint state = game.state();
 
       Action action = chooseAction(game, state);
@@ -334,49 +334,58 @@ class Agent {
       update(game, state, action, game.state(), reward);
       totalReward += reward;
 
-      if (PRINT_MODE == PRETTY_PRINT) {
-        cout << "Action: " << actionNames[action] << " -> " << reward << " reward" << endl;
-      } else if (PRINT_MODE == CSV_PRINT) {
+      // if (PRINT_MODE == PRETTY_PRINT) {
+      //   cout << "Action: " << actionNames[action] << " -> " << reward << " reward" << endl;
+      // } else 
+      if (PRINT_MODE == CSV_PRINT) {
         cout << "," << actionNames[action] << "," << reward << ",";
         if (game.isTerminal()) cout << totalReward;
         cout << endl;
       }
     }
-    if (PRINT_MODE == PRETTY_PRINT) game.printState();
+    // if (PRINT_MODE == PRETTY_PRINT) game.printState();
     return totalReward;
+  }
+
+  void printCsvHeader() {
+    cout << "Episode,Dealer,Current Hand,Num Hands,Hand,Has Ace,Can Split,Has Hit,Bet Size,Insurance,Action,Reward,Episode Net Reward" << endl;
   }
 
   void train(Blackjack& game, int episodes, int checkpoints = 10) {
     float totalReward = 0;
     int checkpointLength = episodes / checkpoints;
 
-    if (PRINT_MODE == CSV_PRINT) {
-      cout << "Episode,Dealer,Current Hand,Num Hands,Hand,Has Ace,Can Split,Has Hit,Bet Size,Insurance,Action,Reward,Episode Net Reward" << endl;
-    }
+    if (PRINT_MODE == CSV_PRINT) printCsvHeader();
 
     for (int c = 0; c < checkpoints; c++) {
       for (int i = 0; i < checkpointLength; i++) {
+        if (PRINT_MODE == NO_PRINT && i == checkpointLength - checkpointLength / 10) {
+          freopen(("output_" + to_string(c) + ".csv").c_str(), "w", stdout);
+          PRINT_MODE = CSV_PRINT;
+          printCsvHeader();
+        }
         episodeNumber = i + c * checkpointLength;
-        if (PRINT_MODE == PRETTY_PRINT) cout << "Episode " << episodeNumber << endl;
+        // if (PRINT_MODE == PRETTY_PRINT) cout << "Episode " << episodeNumber << endl;
         float reward = run(game);
-        if (PRINT_MODE == PRETTY_PRINT) cout << "Total Reward: " << reward << std::endl;
-        if (PRINT_MODE == PRETTY_PRINT) cout << std::endl << string(60, '*') << std::endl << std::endl;
+        // if (PRINT_MODE == PRETTY_PRINT) cout << "Total Reward: " << reward << std::endl;
+        // if (PRINT_MODE == PRETTY_PRINT) cout << std::endl << string(60, '*') << std::endl << std::endl;
         totalReward += reward;
       }
+      fclose(stdout);
+      PRINT_MODE = NO_PRINT;
       cerr << "Average reward after " << (c + 1) * checkpointLength << " episodes: " << totalReward / ((c + 1) * checkpointLength) << " (" << (100.0 * (c + 1) / checkpoints) << "% complete)" << endl;
     }
 
-    if (PRINT_MODE == PRETTY_PRINT) cout << "Average reward: " << totalReward / episodes << std::endl;
+    // if (PRINT_MODE == PRETTY_PRINT) cout << "Average reward: " << totalReward / episodes << std::endl;
   }
 };
 
 int main(int argc, char** argv) {
   Blackjack game;
   Agent agent;
-  PRINT_MODE = CSV_PRINT;
   // fill(&Q[0][0], &Q[0][0] + sizeof(Q) / sizeof(Q[0][0]), 0);
   // fill(&visits[0][0], &visits[0][0] + sizeof(visits) / sizeof(visits[0][0]), 0);
-  int trainingIterations = 1e5;
+  int trainingIterations = 2e9;
   if (argc > 1) {
     stringstream ss(argv[1]);
     ss >> trainingIterations;

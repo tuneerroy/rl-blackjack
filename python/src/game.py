@@ -4,8 +4,9 @@ import numpy as np
 
 from rl import Action, Game, State
 
-DECKS = 6
+DECKS = 1
 VALUES = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+MAX_HANDS = 3
 
 
 class Actions(Enum):
@@ -13,11 +14,8 @@ class Actions(Enum):
     STAND = 1
     DOUBLE_DOWN = 2
     SPLIT = 3
-    INSURANCE_1 = 4
-    INSURANCE_2 = 5
-    INSURANCE_3 = 6
-    INSURANCE_4 = 7
-    INSURANCE_5 = 8
+    INSURANCE_HALF = 4
+    INSURANCE_FULL = 5
 
 
 class BlackjackState(State):
@@ -61,11 +59,8 @@ class Blackjack(Game):
             Actions.STAND: self.stand,
             Actions.DOUBLE_DOWN: self.double_down,
             Actions.SPLIT: self.split,
-            Actions.INSURANCE_1: lambda: self.insurance(0.1),
-            Actions.INSURANCE_2: lambda: self.insurance(0.2),
-            Actions.INSURANCE_3: lambda: self.insurance(0.3),
-            Actions.INSURANCE_4: lambda: self.insurance(0.4),
-            Actions.INSURANCE_5: lambda: self.insurance(0.5),
+            Actions.INSURANCE_HALF: lambda: self.insurance(0.25),
+            Actions.INSURANCE_FULL: lambda: self.insurance(0.5),
         }
 
     def state(self):
@@ -103,11 +98,11 @@ class Blackjack(Game):
         self.current_hand = 0
         self.num_hands = 1
 
-        self.hero_hand = np.zeros(4 * DECKS)
-        self.hero_has_ace = np.zeros(4 * DECKS).astype(bool)
-        self.hero_can_split = np.zeros(4 * DECKS).astype(bool)
-        self.hero_has_hit = np.zeros(4 * DECKS).astype(bool)
-        self.bet_size = np.zeros(4 * DECKS)
+        self.hero_hand = np.zeros(MAX_HANDS)
+        self.hero_has_ace = np.zeros(MAX_HANDS).astype(bool)
+        self.hero_can_split = np.zeros(MAX_HANDS).astype(bool)
+        self.hero_has_hit = np.zeros(MAX_HANDS).astype(bool)
+        self.bet_size = np.zeros(MAX_HANDS)
         self.setup_hand(0, [self.deal_card(), self.deal_card()], bet_size)
 
         self.dealer_hand = self.deal_card()
@@ -218,6 +213,8 @@ class Blackjack(Game):
         return self.terminal
 
     def get_actions(self):
+        if self.terminal:
+            return []
         actions = [Actions.HIT, Actions.STAND]
         if (
             not self.hero_has_hit[self.current_hand]
@@ -226,17 +223,14 @@ class Blackjack(Game):
             actions.append(Actions.DOUBLE_DOWN)
         if (
             not self.hero_has_hit[self.current_hand]
-            and self.hero_can_split[self.current_hand]
+            and self.hero_can_split[self.current_hand] and self.num_hands < MAX_HANDS
         ):
             actions.append(Actions.SPLIT)
         if self.dealer_hand == 1 and self.insurance_bet == 0:
             actions.extend(
                 [
-                    Actions.INSURANCE_1,
-                    Actions.INSURANCE_2,
-                    Actions.INSURANCE_3,
-                    Actions.INSURANCE_4,
-                    Actions.INSURANCE_5,
+                    Actions.INSURANCE_HALF,
+                    Actions.INSURANCE_FULL,
                 ]
             )
         return list(map(BlackjackAction, actions))
