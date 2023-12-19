@@ -9,6 +9,12 @@
 #include <vector>
 using namespace std;
 
+const char PRETTY_PRINT = 0;
+const char CSV_PRINT = 1;
+const char NO_PRINT = 2;
+static char PRINT_MODE = NO_PRINT;
+static int episodeNumber = 0;
+
 // using State = int[21][21][21][2][2][2][2][2][2][2][2][2][2][2][2][10][3][3];
 // float Q[3413975041];
 
@@ -245,14 +251,16 @@ class Blackjack {
   }
 
   void printState() const {
-    cout << "Dealer: " << dealerHand << endl;
-    // For each hand, print the value, hasAce, canSplit, hasHit, betSize, and indicate if it's the current hand
-    // first print header with setw
-    cout << "" << setw(10) << left << "Hand" << setw(10) << left << "Has Ace" << setw(10) << left << "Can Split" << setw(10) << left << "Has Hit" << setw(10) << left << "Bet Size" << setw(10) << left << "Current" << endl;
-    for (int i = 0; i < numHands; i++) {
-      cout <<  "" << setw(10) << left << heroHand[i] << setw(10) << left << (heroHasAce[i] ? "v " : " ") << setw(10) << left << (heroCanSplit[i] ? "v " : " ") << setw(10) << left << (heroHasHit[i] ? "v " : " ") << setw(10) << left << betSize[i] << setw(10) << left << (i == currentHand ? "*" : " ") << endl;
+    if (PRINT_MODE == PRETTY_PRINT) {
+      cout << "Dealer: " << dealerHand << endl;
+      cout << "" << setw(10) << left << "Hand" << setw(10) << left << "Has Ace" << setw(10) << left << "Can Split" << setw(10) << left << "Has Hit" << setw(10) << left << "Bet Size" << setw(10) << left << "Current" << endl;
+      for (int i = 0; i < numHands; i++) {
+        cout <<  "" << setw(10) << left << heroHand[i] << setw(10) << left << (heroHasAce[i] ? "v " : " ") << setw(10) << left << (heroCanSplit[i] ? "v " : " ") << setw(10) << left << (heroHasHit[i] ? "v " : " ") << setw(10) << left << betSize[i] << setw(10) << left << (i == currentHand ? "*" : " ") << endl;
+      }
+      cout << "Insurance: " << insuranceBet << endl << endl;
+    } else if (PRINT_MODE == CSV_PRINT) {
+      cout << episodeNumber << "," << dealerHand << "," << currentHand << "," << numHands << "," << heroHand[currentHand] << "," << heroHasAce[currentHand] << "," << heroCanSplit[currentHand] << "," << heroHasHit[currentHand] << "," << betSize[currentHand] << "," << insuranceBet;
     }
-    cout << "Insurance: " << insuranceBet << endl << endl;
   }
 };
 
@@ -315,44 +323,60 @@ class Agent {
 
   float run(Blackjack& game) {
     game.startGame();  // TODO: rename to reset
-    game.printState();
     float totalReward = 0;
     while (!game.isTerminal()) {
+      game.printState();
       uint state = game.state();
 
       Action action = chooseAction(game, state);
 
       float reward = game.performAction(action);
-      cout << "Action: " << actionNames[action] << " -> " << reward << " reward" << endl;
-      game.printState();
-
       update(game, state, action, game.state(), reward);
       totalReward += reward;
+
+      if (PRINT_MODE == PRETTY_PRINT) {
+        cout << "Action: " << actionNames[action] << " -> " << reward << " reward" << endl;
+      } else if (PRINT_MODE == CSV_PRINT) {
+        cout << "," << actionNames[action] << "," << reward << ",";
+        if (game.isTerminal()) cout << totalReward;
+        cout << endl;
+      }
     }
+    if (PRINT_MODE == PRETTY_PRINT) game.printState();
     return totalReward;
   }
 
-  void train(Blackjack& game, int episodes) {
+  void train(Blackjack& game, int episodes, int checkpoints = 10) {
     float totalReward = 0;
-    for (int i = 0; i < episodes; i++) {
-      cout << "Episode " << i << std::endl << string(60, '-') << std::endl;
-      float reward = run(game);
-      cout << "Total Reward: " << reward << std::endl;
-      cout << std::endl << string(60, '*') << std::endl << std::endl;
-      totalReward += reward;
-      if (i != 0 && i % episodes % (episodes/10) == 0) cerr << "Average reward after " << i << " episodes: " << totalReward / i << " (" << (100.0 * i / episodes) << "% complete)" << endl;
+    int checkpointLength = episodes / checkpoints;
+
+    if (PRINT_MODE == CSV_PRINT) {
+      cout << "Episode,Dealer,Current Hand,Num Hands,Hand,Has Ace,Can Split,Has Hit,Bet Size,Insurance,Action,Reward,Episode Net Reward" << endl;
     }
-    cerr << "Average reward after " << episodes << " episodes: " << totalReward / episodes << " (100% complete)" << endl;
-    cout << "Average reward: " << totalReward / episodes << std::endl;
+
+    for (int c = 0; c < checkpoints; c++) {
+      for (int i = 0; i < checkpointLength; i++) {
+        episodeNumber = i + c * checkpointLength;
+        if (PRINT_MODE == PRETTY_PRINT) cout << "Episode " << episodeNumber << endl;
+        float reward = run(game);
+        if (PRINT_MODE == PRETTY_PRINT) cout << "Total Reward: " << reward << std::endl;
+        if (PRINT_MODE == PRETTY_PRINT) cout << std::endl << string(60, '*') << std::endl << std::endl;
+        totalReward += reward;
+      }
+      cerr << "Average reward after " << (c + 1) * checkpointLength << " episodes: " << totalReward / ((c + 1) * checkpointLength) << " (" << (100.0 * (c + 1) / checkpoints) << "% complete)" << endl;
+    }
+
+    if (PRINT_MODE == PRETTY_PRINT) cout << "Average reward: " << totalReward / episodes << std::endl;
   }
 };
 
 int main(int argc, char** argv) {
   Blackjack game;
   Agent agent;
+  PRINT_MODE = CSV_PRINT;
   // fill(&Q[0][0], &Q[0][0] + sizeof(Q) / sizeof(Q[0][0]), 0);
   // fill(&visits[0][0], &visits[0][0] + sizeof(visits) / sizeof(visits[0][0]), 0);
-  int trainingIterations = 1e6;
+  int trainingIterations = 1e5;
   if (argc > 1) {
     stringstream ss(argv[1]);
     ss >> trainingIterations;
