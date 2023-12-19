@@ -22,13 +22,17 @@ enum Action {
   SPLIT,
   INSURANCE_HALF,
   INSURANCE_FULL,
-  NUM_ACTIONS, // not an action
+  NUM_ACTIONS,  // not an action
 };
 
 const char* actionNames[] = {"HIT", "STAND", "DOUBLE_DOWN", "SPLIT", "INSURANCE_HALF", "INSURANCE_FULL"};
 
-float Q[3413975041][NUM_ACTIONS];
-char visits[3413975041][NUM_ACTIONS];
+// float Q[3413975041][NUM_ACTIONS];
+// char visits[3413975041][NUM_ACTIONS];
+// 3413975041
+// 81935441920
+// float Q[1][NUM_ACTIONS];
+// char visits[1][NUM_ACTIONS];
 
 /*************************game*********************************/
 class Blackjack {
@@ -260,6 +264,12 @@ class Agent {
   float epsilon;
   float exploration;
 
+  // float Q[1][NUM_ACTIONS];
+  // char visits[1][NUM_ACTIONS];
+
+  unordered_map<uint, unordered_map<Action, float>> Q;
+  unordered_map<uint, unordered_map<Action, char>> visits;
+
   // unordered_map<std::pair<State, Action>, float, pairhash> Q;
   // unordered_map<std::pair<State, Action>, float, pairhash> visits;
 
@@ -269,61 +279,7 @@ class Agent {
                                                                                               epsilon(epsilon),
                                                                                               exploration(exploration) {}
 
-  // Agent(string filename) {
-  //   ifstream is(filename);
-  //   if (!is) {
-  //     throw runtime_error("Could not open file " + filename);
-  //   }
-
-  //   string line;
-  //   while (getline(is, line)) {
-  //     stringstream ss(line);
-  //     string stateStr, actionStr;
-  //     float value;
-  //     ss >> stateStr >> actionStr >> value;
-  //     State state = State().deserialize(stateStr);
-  //     Action action = Action().deserialize(actionStr);
-  //     Q[make_pair(state, action)] = value;
-  //   }
-  //   while (getline(is, line)) {
-  //     stringstream ss(line);
-  //     string stateStr, actionStr;
-  //     float value;
-  //     ss >> stateStr >> actionStr >> value;
-  //     State state = State().deserialize(stateStr);
-  //     Action action = Action().deserialize(actionStr);
-  //     visits[make_pair(state, action)] = value;
-  //   }
-  //   getline(is, line);
-  //   stringstream ss(line);
-  //   ss >> alpha >> gamma >> epsilon >> exploration;
-  //   int QSize;
-  //   ss >> QSize;
-  //   for (int i = 0; i < QSize; i++) {
-  //     getline(is, line);
-  //     stringstream ss(line);
-  //     string stateStr, actionStr;
-  //     float value;
-  //     ss >> stateStr >> actionStr >> value;
-  //     State state = State().deserialize(stateStr);
-  //     Action action = Action().deserialize(actionStr);
-  //     Q[make_pair(state, action)] = value;
-  //   }
-  //   int visitsSize;
-  //   ss >> visitsSize;
-  //   for (int i = 0; i < visitsSize; i++) {
-  //     getline(is, line);
-  //     stringstream ss(line);
-  //     string stateStr, actionStr;
-  //     float value;
-  //     ss >> stateStr >> actionStr >> value;
-  //     State state = State().deserialize(stateStr);
-  //     Action action = Action().deserialize(actionStr);
-  //     visits[make_pair(state, action)] = value;
-  //   }
-  // }
-
-  Action chooseAction(const Blackjack& game, uint state) const {
+  Action chooseAction(const Blackjack& game, uint state) {
     vector<Action> actions = game.getActions();
     vector<Action> bestActions;
     float bestValue = -1;
@@ -344,16 +300,16 @@ class Agent {
     // pair<State, Action> key = make_pair(state, action);
 
     vector<Action> nextActions = game.getActions();
-    assert(!nextActions.empty());
 
     // Find the best Q across all possible next actions
-    float bestValue = 0;
+    float bestValue = numeric_limits<float>::min();
     for (Action nextAction : nextActions) {
       bestValue = max(bestValue, Q[nextState][nextAction]);
     }
+    if (nextActions.empty()) bestValue = 0;
 
     Q[state][action] += alpha * (reward + gamma * bestValue - Q[state][action]);
-    visits[state][action] += 1;
+    visits[state][action]++;
   }
 
   float run(Blackjack& game) {
@@ -391,31 +347,18 @@ class Agent {
     }
     std::cout << "Average reward: " << totalReward / episodes << std::endl;
   }
-
-  // void dump(ostream& os) const {
-  //   for (const auto& [key, value] : Q) {
-  //     auto& [state, action] = key;
-  //     os << state.serialize() << " " << action.serialize() << " ";
-  //     os << value << endl;
-  //   }
-  //   os << endl;
-  //   for (const auto& [key, value] : visits) {
-  //     auto& [state, action] = key;
-  //     os << state.serialize() << " " << action.serialize() << " ";
-  //     os << value << endl;
-  //   }
-  //   os << endl;
-  //   os << alpha << " " << gamma << " " << epsilon << " " << exploration << endl;
-  //   os << Q.size() << endl;
-  //   os << visits.size() << endl;
-  // }
 };
 
-int main() {
+int main(int argc, char** argv) {
   Blackjack game;
   Agent agent;
-  fill(&Q[0][0], &Q[0][0] + sizeof(Q) / sizeof(Q[0][0]), 0);
-  fill(&visits[0][0], &visits[0][0] + sizeof(visits) / sizeof(visits[0][0]), 0);
-  agent.train(game, 1000);
+  // fill(&Q[0][0], &Q[0][0] + sizeof(Q) / sizeof(Q[0][0]), 0);
+  // fill(&visits[0][0], &visits[0][0] + sizeof(visits) / sizeof(visits[0][0]), 0);
+  int trainingIterations = 10000;
+  if (argc > 1) {
+    stringstream ss(argv[1]);
+    ss >> trainingIterations;
+  }
+  agent.train(game, trainingIterations);
   return 0;
 }
