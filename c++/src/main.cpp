@@ -11,8 +11,6 @@ using namespace std;
 
 // using State = int[21][21][21][2][2][2][2][2][2][2][2][2][2][2][2][10][3][3];
 // float Q[3413975041];
-float Q[3413975041][4];
-char visits[3413975041][4];
 
 // Q: sate actions
 // vistittation: state actions
@@ -23,8 +21,14 @@ enum Action {
   DOUBLE_DOWN,
   SPLIT,
   INSURANCE_HALF,
-  INSURANCE_FULL
+  INSURANCE_FULL,
+  NUM_ACTIONS, // not an action
 };
+
+const char* actionNames[] = {"HIT", "STAND", "DOUBLE_DOWN", "SPLIT", "INSURANCE_HALF", "INSURANCE_FULL"};
+
+float Q[3413975041][NUM_ACTIONS];
+char visits[3413975041][NUM_ACTIONS];
 
 /*************************game*********************************/
 class Blackjack {
@@ -48,13 +52,17 @@ class Blackjack {
 
   default_random_engine rng;
 
-  uint linearizeValue(const vector<bool>& heroHasAce,
-                      const vector<bool>& heroCanSplit,
-                      const vector<bool>& heroHasHit,
-                      const vector<int>& betSize,
-                      const int dealerHand,
-                      const int currentHand,
-                      const double insuranceBet) {
+ public:
+  Blackjack() : rng(random_device{}()), heroHand(MAX_HANDS), heroHasAce(MAX_HANDS), heroCanSplit(MAX_HANDS), heroHasHit(MAX_HANDS), betSize(MAX_HANDS) {
+    vector<int> oneDeck = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10};
+    for (int i = 0; i < DECKS; i++) {
+      for (int j = 0; j < 4; j++) {
+        deck.insert(deck.end(), oneDeck.begin(), oneDeck.end());
+      }
+    }
+  }
+
+  uint state() {
     uint depth = 1;
     uint res = insuranceBet * depth;
     depth *= 3;
@@ -75,19 +83,6 @@ class Blackjack {
       depth *= 21;
     }
     return res + 1;
-  }
-
- public:
-  Blackjack() : rng(random_device{}()), heroHand(MAX_HANDS), heroHasAce(MAX_HANDS), heroCanSplit(MAX_HANDS), heroHasHit(MAX_HANDS), betSize(MAX_HANDS) {
-    vector<int> oneDeck = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10};
-    for (int i = 0; i < DECKS; i++) {
-      for (int j = 0; j < 4; j++) {
-        deck.insert(deck.end(), oneDeck.begin(), oneDeck.end());
-      }
-    }
-  }
-
-  long long state() {
   }
 
   int dealCard() {
@@ -212,11 +207,11 @@ class Blackjack {
     return 0;
   }
 
-  bool isTerminal() {
+  bool isTerminal() const {
     return terminal;
   }
 
-  vector<Action> getActions() {
+  vector<Action> getActions() const {
     if (isTerminal()) return {};
     vector<Action> actions = {HIT, STAND};
     if (!heroHasHit[currentHand] && 9 <= heroHand[currentHand] && heroHand[currentHand] <= 11) actions.push_back(DOUBLE_DOWN);
@@ -239,8 +234,20 @@ class Blackjack {
         return insurance(0.25);
       case INSURANCE_FULL:
         return insurance(0.5);
+      default:
+        throw runtime_error("Invalid action");
     }
-    return 0;
+  }
+
+  void printState() const {
+    cout << "Dealer: " << dealerHand << endl;
+    // For each hand, print the value, hasAce, canSplit, hasHit, betSize, and indicate if it's the current hand
+    // first print header with setw
+    cout << "Hand\tValue\tHasAce\tCanSplit\tHasHit\tBet" << endl;
+    for (int i = 0; i < numHands; i++) {
+      cout << i << "\t" << heroHand[i] << "\t" << heroHasAce[i] << "\t" << heroCanSplit[i] << "\t" << heroHasHit[i] << "\t" << betSize[i] << "\t" << (i == currentHand ? "*" : "") << endl;
+    }
+    cout << "Insurance: " << insuranceBet << endl;
   }
 };
 
@@ -262,66 +269,66 @@ class Agent {
                                                                                               epsilon(epsilon),
                                                                                               exploration(exploration) {}
 
-  Agent(string filename) {
-    ifstream is(filename);
-    if (!is) {
-      throw runtime_error("Could not open file " + filename);
-    }
+  // Agent(string filename) {
+  //   ifstream is(filename);
+  //   if (!is) {
+  //     throw runtime_error("Could not open file " + filename);
+  //   }
 
-    string line;
-    while (getline(is, line)) {
-      stringstream ss(line);
-      string stateStr, actionStr;
-      float value;
-      ss >> stateStr >> actionStr >> value;
-      State state = State().deserialize(stateStr);
-      Action action = Action().deserialize(actionStr);
-      Q[make_pair(state, action)] = value;
-    }
-    while (getline(is, line)) {
-      stringstream ss(line);
-      string stateStr, actionStr;
-      float value;
-      ss >> stateStr >> actionStr >> value;
-      State state = State().deserialize(stateStr);
-      Action action = Action().deserialize(actionStr);
-      visits[make_pair(state, action)] = value;
-    }
-    getline(is, line);
-    stringstream ss(line);
-    ss >> alpha >> gamma >> epsilon >> exploration;
-    int QSize;
-    ss >> QSize;
-    for (int i = 0; i < QSize; i++) {
-      getline(is, line);
-      stringstream ss(line);
-      string stateStr, actionStr;
-      float value;
-      ss >> stateStr >> actionStr >> value;
-      State state = State().deserialize(stateStr);
-      Action action = Action().deserialize(actionStr);
-      Q[make_pair(state, action)] = value;
-    }
-    int visitsSize;
-    ss >> visitsSize;
-    for (int i = 0; i < visitsSize; i++) {
-      getline(is, line);
-      stringstream ss(line);
-      string stateStr, actionStr;
-      float value;
-      ss >> stateStr >> actionStr >> value;
-      State state = State().deserialize(stateStr);
-      Action action = Action().deserialize(actionStr);
-      visits[make_pair(state, action)] = value;
-    }
-  }
+  //   string line;
+  //   while (getline(is, line)) {
+  //     stringstream ss(line);
+  //     string stateStr, actionStr;
+  //     float value;
+  //     ss >> stateStr >> actionStr >> value;
+  //     State state = State().deserialize(stateStr);
+  //     Action action = Action().deserialize(actionStr);
+  //     Q[make_pair(state, action)] = value;
+  //   }
+  //   while (getline(is, line)) {
+  //     stringstream ss(line);
+  //     string stateStr, actionStr;
+  //     float value;
+  //     ss >> stateStr >> actionStr >> value;
+  //     State state = State().deserialize(stateStr);
+  //     Action action = Action().deserialize(actionStr);
+  //     visits[make_pair(state, action)] = value;
+  //   }
+  //   getline(is, line);
+  //   stringstream ss(line);
+  //   ss >> alpha >> gamma >> epsilon >> exploration;
+  //   int QSize;
+  //   ss >> QSize;
+  //   for (int i = 0; i < QSize; i++) {
+  //     getline(is, line);
+  //     stringstream ss(line);
+  //     string stateStr, actionStr;
+  //     float value;
+  //     ss >> stateStr >> actionStr >> value;
+  //     State state = State().deserialize(stateStr);
+  //     Action action = Action().deserialize(actionStr);
+  //     Q[make_pair(state, action)] = value;
+  //   }
+  //   int visitsSize;
+  //   ss >> visitsSize;
+  //   for (int i = 0; i < visitsSize; i++) {
+  //     getline(is, line);
+  //     stringstream ss(line);
+  //     string stateStr, actionStr;
+  //     float value;
+  //     ss >> stateStr >> actionStr >> value;
+  //     State state = State().deserialize(stateStr);
+  //     Action action = Action().deserialize(actionStr);
+  //     visits[make_pair(state, action)] = value;
+  //   }
+  // }
 
-  Action& chooseAction(const Blackjack& game, uint state) const {
+  Action chooseAction(const Blackjack& game, uint state) const {
     vector<Action> actions = game.getActions();
     vector<Action> bestActions;
     float bestValue = -1;
-    for (const Action& action : actions) {
-      float value = Q.find(make_pair(state, action))->second;
+    for (Action action : actions) {
+      float value = Q[state][action];
       if (value > bestValue) {
         bestValue = value;
         bestActions.clear();
@@ -333,81 +340,82 @@ class Agent {
     return bestActions[rand() % bestActions.size()];
   }
 
-  void update(const Game<State, Action>& game, const State& state, const Action& action, const State& nextState, float reward) {
-    pair<State, Action> key = make_pair(state, action);
+  void update(const Blackjack& game, uint state, Action action, uint nextState, float reward) {
+    // pair<State, Action> key = make_pair(state, action);
 
     vector<Action> nextActions = game.getActions();
     assert(!nextActions.empty());
 
     // Find the best Q across all possible next actions
-    float bestValue = numeric_limits<float>::min();
-    for (const Action& nextAction : nextActions) {
-      float value = Q[make_pair(state, nextAction)];
-      if (value > bestValue) {
-        bestValue = value;
-      }
-    }
-    if (nextActions.empty()) {
-      bestValue = 0;
+    float bestValue = 0;
+    for (Action nextAction : nextActions) {
+      bestValue = max(bestValue, Q[nextState][nextAction]);
     }
 
-    Q[key] = Q[key] + alpha * (reward + gamma * bestValue - Q[key]);
-    visits[key] += 1;
+    Q[state][action] += alpha * (reward + gamma * bestValue - Q[state][action]);
+    visits[state][action] += 1;
   }
 
-  float run(Game& game) {
+  float run(Blackjack& game) {
     game.startGame();  // TODO: rename to reset
     float totalReward = 0;
     while (!game.isTerminal()) {
-      State& state = game.state();
-      std::cout << "State: " << state << std::endl;
+      uint state = game.state();
+      cout << "State:" << endl;
+      game.printState();
 
-      Action& action = chooseAction(game, state);
-      std::cout << "Action: " << action << std::endl;
+      Action action = chooseAction(game, state);
+      cout << "Action: " << actionNames[action] << std::endl;
 
-      auto [nextState, reward] = game.performAction(action);
-      std::cout << "Next state: " << nextState << std::endl;
-      std::cout << "Reward: " << reward << std::endl;
+      float reward = game.performAction(action);
+      cout << "New State:" << endl;
+      game.printState();
+      cout << "Reward: " << reward << std::endl;
 
-      update(game, state, action, nextState, reward);
+      update(game, state, action, game.state(), reward);
       totalReward += reward;
 
-      std::cout << string(80, '-') << std::endl;
+      cout << string(80, '-') << std::endl;
     }
     return totalReward;
   }
 
   void train(Blackjack& game, int episodes) {
-    float averageReward = 0;
+    float totalReward = 0;
     for (int i = 0; i < episodes; i++) {
-      std::cout << "Episode " << i << std::endl;
+      cout << "Episode " << i << std::endl;
       float reward = run(game);
-      std::cout << "Reward: " << reward << std::endl;
-      averageReward = (averageReward * i + reward) / (i + 1);
+      cout << "Total Reward: " << reward << std::endl;
+      cout << string(80, '=') << std::endl;
+      totalReward += reward;
     }
-    std::cout << "Average reward: " << averageReward << std::endl;
+    std::cout << "Average reward: " << totalReward / episodes << std::endl;
   }
 
-  void dump(ostream& os) const {
-    for (const auto& [key, value] : Q) {
-      auto& [state, action] = key;
-      os << state.serialize() << " " << action.serialize() << " ";
-      os << value << endl;
-    }
-    os << endl;
-    for (const auto& [key, value] : visits) {
-      auto& [state, action] = key;
-      os << state.serialize() << " " << action.serialize() << " ";
-      os << value << endl;
-    }
-    os << endl;
-    os << alpha << " " << gamma << " " << epsilon << " " << exploration << endl;
-    os << Q.size() << endl;
-    os << visits.size() << endl;
-  }
+  // void dump(ostream& os) const {
+  //   for (const auto& [key, value] : Q) {
+  //     auto& [state, action] = key;
+  //     os << state.serialize() << " " << action.serialize() << " ";
+  //     os << value << endl;
+  //   }
+  //   os << endl;
+  //   for (const auto& [key, value] : visits) {
+  //     auto& [state, action] = key;
+  //     os << state.serialize() << " " << action.serialize() << " ";
+  //     os << value << endl;
+  //   }
+  //   os << endl;
+  //   os << alpha << " " << gamma << " " << epsilon << " " << exploration << endl;
+  //   os << Q.size() << endl;
+  //   os << visits.size() << endl;
+  // }
 };
 
 int main() {
+  Blackjack game;
   Agent agent;
+  fill(&Q[0][0], &Q[0][0] + sizeof(Q) / sizeof(Q[0][0]), 0);
+  fill(&visits[0][0], &visits[0][0] + sizeof(visits) / sizeof(visits[0][0]), 0);
+  agent.train(game, 1000);
   return 0;
 }
