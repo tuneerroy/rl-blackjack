@@ -12,6 +12,7 @@ using namespace std;
 const char PRETTY_PRINT = 0;
 const char CSV_PRINT = 1;
 const char NO_PRINT = 2;
+const char CHECK_POINT_PRINT = 3;
 static char PRINT_MODE = NO_PRINT;
 static long episodeNumber = 0;
 
@@ -325,7 +326,7 @@ class Agent {
     game.startGame();  // TODO: rename to reset
     float totalReward = 0;
     while (!game.isTerminal()) {
-      if (PRINT_MODE != NO_PRINT) game.printState();
+      game.printState();
       uint state = game.state();
 
       Action action = chooseAction(game, state);
@@ -354,25 +355,30 @@ class Agent {
   void train(Blackjack& game, long episodes, int checkpoints = 10) {
     float totalReward = 0;
     long checkpointLength = episodes / checkpoints;
+    static int CSV_LENGTH = min((long) 1e6, checkpointLength);
 
     if (PRINT_MODE == CSV_PRINT) printCsvHeader();
 
+    bool checkpoint_print = PRINT_MODE == CHECK_POINT_PRINT;
+
     for (int c = 0; c < checkpoints; c++) {
       for (long i = 0; i < checkpointLength; i++) {
-        if (PRINT_MODE == NO_PRINT && i == checkpointLength - checkpointLength / 10) {
+        if (checkpoint_print && i == checkpointLength - CSV_LENGTH) {
           freopen(("output_" + to_string(c) + ".csv").c_str(), "w", stdout);
           PRINT_MODE = CSV_PRINT;
           printCsvHeader();
         }
-        episodeNumber = i + c * checkpointLength;
+        episodeNumber = i + c * checkpointLength; // used for printing
         // if (PRINT_MODE == PRETTY_PRINT) cout << "Episode " << episodeNumber << endl;
         float reward = run(game);
         // if (PRINT_MODE == PRETTY_PRINT) cout << "Total Reward: " << reward << std::endl;
         // if (PRINT_MODE == PRETTY_PRINT) cout << std::endl << string(60, '*') << std::endl << std::endl;
         totalReward += reward;
       }
-      fclose(stdout);
-      PRINT_MODE = NO_PRINT;
+      if (checkpoint_print && PRINT_MODE == CSV_PRINT) {
+        fclose(stdout);
+        PRINT_MODE = CHECK_POINT_PRINT;
+      }
       cerr << "Average reward after " << (c + 1) * checkpointLength << " episodes: " << totalReward / ((c + 1) * checkpointLength) << " (" << (100.0 * (c + 1) / checkpoints) << "% complete)" << endl;
     }
 
@@ -383,13 +389,14 @@ class Agent {
 int main(int argc, char** argv) {
   Blackjack game;
   Agent agent;
+  PRINT_MODE = CHECK_POINT_PRINT;
   // fill(&Q[0][0], &Q[0][0] + sizeof(Q) / sizeof(Q[0][0]), 0);
   // fill(&visits[0][0], &visits[0][0] + sizeof(visits) / sizeof(visits[0][0]), 0);
-  long trainingIterations = 1e9;
+  long trainingIterations = 1e12;
   if (argc > 1) {
     stringstream ss(argv[1]);
     ss >> trainingIterations;
   }
-  agent.train(game, trainingIterations);
+  agent.train(game, trainingIterations, 10000);
   return 0;
 }
