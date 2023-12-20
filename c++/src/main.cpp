@@ -13,7 +13,7 @@ const char PRETTY_PRINT = 0;
 const char CSV_PRINT = 1;
 const char NO_PRINT = 2;
 static char PRINT_MODE = NO_PRINT;
-static int episodeNumber = 0;
+static long episodeNumber = 0;
 
 // using State = int[21][21][21][2][2][2][2][2][2][2][2][2][2][2][2][10][3][3];
 // float Q[3413975041];
@@ -293,7 +293,7 @@ class Agent {
     vector<Action> bestActions;
     float bestValue = numeric_limits<float>::lowest();
     for (Action action : actions) {
-      float value = Q[state][action];
+      float value = Q[state][action] + exploration / (1 + visits[state][action]);
       if (value > bestValue) {
         bestValue = value;
         bestActions.clear();
@@ -351,14 +351,14 @@ class Agent {
     cout << "Episode,Dealer,Current Hand,Num Hands,Hand,Has Ace,Can Split,Has Hit,Bet Size,Insurance,Action,Reward,Episode Net Reward" << endl;
   }
 
-  void train(Blackjack& game, int episodes, int checkpoints = 10) {
+  void train(Blackjack& game, long episodes, int checkpoints = 10) {
     float totalReward = 0;
-    int checkpointLength = episodes / checkpoints;
+    long checkpointLength = episodes / checkpoints;
 
     if (PRINT_MODE == CSV_PRINT) printCsvHeader();
 
     for (int c = 0; c < checkpoints; c++) {
-      for (int i = 0; i < checkpointLength; i++) {
+      for (long i = 0; i < checkpointLength; i++) {
         if (PRINT_MODE == NO_PRINT && i == checkpointLength - checkpointLength / 10) {
           freopen(("output_" + to_string(c) + ".csv").c_str(), "w", stdout);
           PRINT_MODE = CSV_PRINT;
@@ -385,7 +385,7 @@ int main(int argc, char** argv) {
   Agent agent;
   // fill(&Q[0][0], &Q[0][0] + sizeof(Q) / sizeof(Q[0][0]), 0);
   // fill(&visits[0][0], &visits[0][0] + sizeof(visits) / sizeof(visits[0][0]), 0);
-  int trainingIterations = 2e9;
+  long trainingIterations = 1e9;
   if (argc > 1) {
     stringstream ss(argv[1]);
     ss >> trainingIterations;
